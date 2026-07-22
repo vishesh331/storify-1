@@ -2,236 +2,103 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Profile | Minimalist</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #FAFAFA; --card: #FFFFFF; --text: #111111; --muted: #666666; --border: #E5E5E5; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; text-decoration: none; }
-        input, select { font-family: inherit; }
+        input { font-family: inherit; }
         
         nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(20px); background: rgba(250,250,250,0.8); border-bottom: 1px solid var(--border); }
-        .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 60px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-        .nav-logo { font-weight: 600; font-size: 18px; }
+        .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav-logo { font-weight: 600; font-size: 16px; }
         
-        .profile-container { max-width: 800px; margin: 40px auto; padding: 0 24px; }
-        h1 { font-size: 32px; font-weight: 600; margin-bottom: 32px; }
-        h2 { font-size: 20px; font-weight: 600; margin: 40px 0 16px; }
+        .profile-container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+        h1 { font-size: 24px; font-weight: 600; margin-bottom: 24px; }
+        h2 { font-size: 18px; font-weight: 600; margin: 32px 0 16px; }
         
-        .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 24px; }
+        .card { background: white; border-radius: 12px; padding: 20px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 16px; }
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
-        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
-        .btn-primary { background: #111; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 500; }
-        .btn-secondary { background: #f0f0f0; color: #111; padding: 10px 20px; border-radius: 8px; font-weight: 500; margin-left: 12px; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+        .btn-primary { background: #111; color: white; padding: 14px; border-radius: 8px; font-weight: 500; width: 100%; font-size: 16px; }
+        .btn-secondary { background: #f0f0f0; color: #111; padding: 14px; border-radius: 8px; font-weight: 500; width: 100%; margin-top: 8px; font-size: 16px; }
         
         .address-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; position: relative; }
-        .address-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; text-transform: capitalize; }
-        .address-text { font-size: 14px; color: var(--muted); line-height: 1.4; }
-        .delete-btn { position: absolute; top: 16px; right: 16px; color: #D32F2F; font-size: 12px; }
+        .address-label { font-weight: 600; font-size: 15px; margin-bottom: 4px; text-transform: capitalize; }
+        .address-text { font-size: 14px; color: var(--muted); line-height: 1.4; padding-right: 40px; }
+        .delete-btn { position: absolute; top: 16px; right: 16px; color: #D32F2F; font-size: 12px; background: #FFE5E5; padding: 6px 10px; border-radius: 6px; }
         
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 500px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
+        .modal-box { background: white; padding: 32px 24px; border-radius: 16px 16px 0 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
-
-    <nav>
-        <div class="nav-inner">
-            <a href="index.html" class="nav-logo">Minimalist</a>
-            <button onclick="logout()">Logout</button>
-        </div>
-    </nav>
+    <nav><div class="nav-inner"><a href="index.html" class="nav-logo">Minimalist</a><button onclick="logout()" style="font-size: 14px; color: #666;">Logout</button></div></nav>
 
     <div class="profile-container">
         <h1>My Profile</h1>
-        
         <h2>Personal Details</h2>
         <div class="card">
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" id="profile-email" class="form-input" disabled style="background: #f5f5f5;">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Full Name</label>
-                <input type="text" id="profile-name" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Mobile Number</label>
-                <input type="text" id="profile-mobile" class="form-input">
-            </div>
+            <div class="form-group"><label class="form-label">Email</label><input type="email" id="profile-email" class="form-input" disabled style="background: #f5f5f5;"></div>
+            <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="profile-name" class="form-input"></div>
+            <div class="form-group"><label class="form-label">Mobile Number</label><input type="text" id="profile-mobile" class="form-input"></div>
             <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
         </div>
-
         <h2>Saved Addresses</h2>
         <div id="addresses-list"></div>
-        <button class="btn-secondary" style="margin-left: 0; margin-top: 8px;" onclick="showAddressModal()">+ Add New Address</button>
+        <button class="btn-secondary" onclick="showAddressModal()">+ Add New Address</button>
     </div>
 
-    <!-- Address Modal -->
     <div id="address-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3 style="margin-bottom: 20px; font-size: 20px;">Add Address</h3>
-            <input type="hidden" id="address-id">
-            <div class="form-group">
-                <label class="form-label">Label (e.g. Home, Work)</label>
-                <input type="text" id="address-label" class="form-input" placeholder="Home">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Address Line 1</label>
-                <input type="text" id="address-line1" class="form-input" placeholder="123 Main St">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Address Line 2 (Optional)</label>
-                <input type="text" id="address-line2" class="form-input" placeholder="Apt 4B">
-            </div>
-            <div class="form-group">
-                <label class="form-label">City</label>
-                <input type="text" id="address-city" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">State</label>
-                <input type="text" id="address-state" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Postal Code</label>
-                <input type="text" id="address-postal" class="form-input">
-            </div>
+            <div class="form-group"><label class="form-label">Label (Home, Work)</label><input type="text" id="address-label" class="form-input" placeholder="Home"></div>
+            <div class="form-group"><label class="form-label">Address Line 1</label><input type="text" id="address-line1" class="form-input" placeholder="123 Main St"></div>
+            <div class="form-group"><label class="form-label">Address Line 2 (Optional)</label><input type="text" id="address-line2" class="form-input" placeholder="Apt 4B"></div>
+            <div class="form-group"><label class="form-label">City</label><input type="text" id="address-city" class="form-input"></div>
+            <div class="form-group"><label class="form-label">State</label><input type="text" id="address-state" class="form-input"></div>
+            <div class="form-group"><label class="form-label">Postal Code</label><input type="text" id="address-postal" class="form-input"></div>
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button class="btn-secondary" style="margin: 0; flex: 1;" onclick="hideAddressModal()">Cancel</button>
+                <button class="btn-secondary" style="margin-top: 0; flex: 1;" onclick="hideAddressModal()">Cancel</button>
                 <button class="btn-primary" style="flex: 1;" onclick="saveAddress()">Save Address</button>
             </div>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://orbaakzywwwiiemyszmd.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let currentUser = null;
-        let currentCustomer = null;
-
+        const SUPABASE_URL = 'https://orbaakzywwwiiemyszmd.supabase.co'; const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK'; const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentUser = null; let currentCustomer = null;
         async function initProfile() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
-                window.location.href = 'index.html';
-                return;
-            }
-            currentUser = session.user;
-            document.getElementById('profile-email').value = currentUser.email;
-
-            // Fetch customer data
+            const { data: { session } } = await sb.auth.getSession(); if (!session) { window.location.href = 'index.html'; return; }
+            currentUser = session.user; document.getElementById('profile-email').value = currentUser.email;
             const { data: custData } = await sb.from('customers').select('*').eq('user_id', currentUser.id).maybeSingle();
-            
-            if (custData) {
-                // Profile exists
-                currentCustomer = custData;
-                document.getElementById('profile-name').value = custData.full_name || '';
-                document.getElementById('profile-mobile').value = custData.mobile_number || '';
-            } else {
-                // Profile doesn't exist (e.g. older account), create it
-                const { data: newCust, error } = await sb.from('customers').insert({
-                    user_id: currentUser.id,
-                    email: currentUser.email
-                }).select().single();
-                
-                if (error) {
-                    console.error("Error creating profile:", error);
-                } else {
-                    currentCustomer = newCust;
-                }
-            }
-
+            if (custData) { currentCustomer = custData; document.getElementById('profile-name').value = custData.full_name || ''; document.getElementById('profile-mobile').value = custData.mobile_number || ''; }
+            else { const { data: newCust } = await sb.from('customers').insert({ user_id: currentUser.id, email: currentUser.email }).select().single(); currentCustomer = newCust; }
             await loadAddresses();
         }
-
-        async function saveProfile() {
-            const name = document.getElementById('profile-name').value;
-            const mobile = document.getElementById('profile-mobile').value;
-            
-            const { error } = await sb.from('customers').update({
-                full_name: name,
-                mobile_number: mobile
-            }).eq('user_id', currentUser.id);
-            
-            if (!error) alert("Profile updated successfully!");
-            else alert("Error: " + error.message);
-        }
-
+        async function saveProfile() { const name = document.getElementById('profile-name').value; const mobile = document.getElementById('profile-mobile').value; const { error } = await sb.from('customers').update({ full_name: name, mobile_number: mobile }).eq('user_id', currentUser.id); if (!error) alert("Profile updated!"); else alert("Error: " + error.message); }
         async function loadAddresses() {
-            const { data, error } = await sb.from('addresses').select('*').eq('user_id', currentUser.id);
-            const list = document.getElementById('addresses-list');
-            
-            if (error || !data || data.length === 0) {
-                list.innerHTML = `<p style="color: #666; margin-bottom: 16px;">No addresses saved yet.</p>`;
-                return;
-            }
-
-            list.innerHTML = data.map(addr => `
-                <div class="address-card">
-                    <div class="address-label">₹{addr.label || 'Address'}</div>
-                    <div class="address-text">
-                        ₹{addr.address_line1}<br>
-                        ₹{addr.address_line2 ? addr.address_line2 + '<br>' : ''}
-                        ₹{addr.city}, ₹{addr.state} ₹{addr.postal_code}
-                    </div>
-                    <button class="delete-btn" onclick="deleteAddress('₹{addr.id}')">Delete</button>
-                </div>
-            `).join('');
+            const { data } = await sb.from('addresses').select('*').eq('user_id', currentUser.id); const list = document.getElementById('addresses-list');
+            if (!data || data.length === 0) { list.innerHTML = `<p style="color: #666; margin-bottom: 16px;">No addresses saved.</p>`; return; }
+            list.innerHTML = data.map(addr => `<div class="address-card"><div class="address-label">${addr.label || 'Address'}</div><div class="address-text">${addr.address_line1}<br>${addr.address_line2 ? addr.address_line2 + '<br>' : ''}${addr.city}, ${addr.state} ${addr.postal_code}</div><button class="delete-btn" onclick="deleteAddress('${addr.id}')">Delete</button></div>`).join('');
         }
-
-        function showAddressModal() {
-            document.getElementById('address-modal').classList.remove('hidden');
-        }
-
-        function hideAddressModal() {
-            document.getElementById('address-modal').classList.add('hidden');
-            document.querySelectorAll('#address-modal input').forEach(input => input.value = '');
-        }
-
+        function showAddressModal() { document.getElementById('address-modal').classList.remove('hidden'); }
+        function hideAddressModal() { document.getElementById('address-modal').classList.add('hidden'); document.querySelectorAll('#address-modal input').forEach(input => input.value = ''); }
         async function saveAddress() {
-            const newAddress = {
-                user_id: currentUser.id,
-                customer_id: currentCustomer ? currentCustomer.id : null,
-                label: document.getElementById('address-label').value,
-                address_line1: document.getElementById('address-line1').value,
-                address_line2: document.getElementById('address-line2').value,
-                city: document.getElementById('address-city').value,
-                state: document.getElementById('address-state').value,
-                postal_code: document.getElementById('address-postal').value
-            };
-
-            if (!newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) {
-                return alert("Please fill in all required fields.");
-            }
-
-            const { error } = await sb.from('addresses').insert([newAddress]);
-            if (error) {
-                return alert("Error saving address: " + error.message);
-            }
-
-            hideAddressModal();
-            await loadAddresses();
+            const newAddress = { user_id: currentUser.id, customer_id: currentCustomer ? currentCustomer.id : null, label: document.getElementById('address-label').value, address_line1: document.getElementById('address-line1').value, address_line2: document.getElementById('address-line2').value, city: document.getElementById('address-city').value, state: document.getElementById('address-state').value, postal_code: document.getElementById('address-postal').value };
+            if (!newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) return alert("Please fill required fields.");
+            const { error } = await sb.from('addresses').insert([newAddress]); if (error) return alert("Error: " + error.message); hideAddressModal(); await loadAddresses();
         }
-
-        async function deleteAddress(id) {
-            if (!confirm("Delete this address?")) return;
-            await sb.from('addresses').delete().eq('id', id);
-            await loadAddresses();
-        }
-
-        async function logout() {
-            await sb.auth.signOut();
-            window.location.href = 'index.html';
-        }
-
-        // Init
+        async function deleteAddress(id) { if (!confirm("Delete?")) return; await sb.from('addresses').delete().eq('id', id); await loadAddresses(); }
+        async function logout() { await sb.auth.signOut(); window.location.href = 'index.html'; }
         initProfile();
     </script>
 </body>

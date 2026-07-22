@@ -2,261 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cart | Minimalist</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #FAFAFA; --card: #FFFFFF; --text: #111111; --muted: #666666; --border: #E5E5E5; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; text-decoration: none; }
-        input { font-family: inherit; }
         
         nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(20px); background: rgba(250,250,250,0.8); border-bottom: 1px solid var(--border); }
-        .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 60px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-        .nav-logo { font-weight: 600; font-size: 18px; }
+        .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 56px; max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+        .nav-logo { font-weight: 600; font-size: 16px; }
         
-        .cart-container { max-width: 800px; margin: 40px auto; padding: 0 24px; }
-        h1 { font-size: 32px; font-weight: 600; margin-bottom: 32px; }
-        h2 { font-size: 20px; font-weight: 600; margin: 40px 0 16px; }
+        .cart-container { max-width: 800px; margin: 24px auto 80px; padding: 0 16px; }
+        h1 { font-size: 24px; font-weight: 600; margin-bottom: 24px; }
+        h2 { font-size: 18px; font-weight: 600; margin: 32px 0 16px; }
         
-        .cart-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
-        .item-name { font-weight: 500; }
+        .cart-item { display: flex; flex-direction: column; gap: 8px; background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .item-name { font-weight: 500; font-size: 16px; padding-right: 16px; }
         .item-price { color: var(--muted); font-size: 14px; margin-top: 4px; }
+        .remove-btn { color: #D32F2F; font-size: 12px; background: #FFE5E5; padding: 6px 10px; border-radius: 6px; white-space: nowrap; }
         
         .address-option { border: 2px solid #eee; padding: 16px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; }
         .address-option.selected { border-color: #111; }
-        .address-label { font-weight: 600; text-transform: capitalize; }
+        .address-label { font-weight: 600; text-transform: capitalize; font-size: 15px; }
         .address-text { color: var(--muted); font-size: 14px; margin-top: 4px; }
         
-        .cart-summary { margin-top: 40px; text-align: right; }
-        .total-text { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-        .checkout-btn { background: #111; color: white; padding: 16px 32px; border-radius: 100px; font-size: 16px; font-weight: 500; }
+        .cart-summary { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 16px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 40; }
+        .summary-inner { max-width: 800px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+        .total-text { font-size: 18px; font-weight: 600; }
+        .checkout-btn { background: #111; color: white; padding: 16px 32px; border-radius: 100px; font-size: 16px; font-weight: 500; flex-grow: 1; }
         .empty-cart { text-align: center; padding: 80px 0; color: var(--muted); }
         
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
+        .modal-box { background: white; padding: 32px 24px; border-radius: 16px 16px 0 0; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
-
-    <nav>
-        <div class="nav-inner">
-            <a href="index.html" class="nav-logo">Minimalist</a>
-            <button onclick="goBack()">Continue Shopping</button>
-        </div>
-    </nav>
+    <nav><div class="nav-inner"><a href="index.html" class="nav-logo">Minimalist</a><button onclick="goBack()" style="font-size: 14px; color: #666;">Continue Shopping</button></div></nav>
 
     <div class="cart-container">
         <h1>Your Cart</h1>
         <div id="cart-items"></div>
-        
         <div id="address-section" class="hidden">
             <h2>Select Delivery Address</h2>
             <div id="address-list"></div>
-            <button onclick="showAddressModal()" style="color: #111; font-weight: 500; margin-top: 8px;">+ Add New Address</button>
+            <button onclick="showAddressModal()" style="color: #111; font-weight: 500; margin-top: 8px; width: 100%; text-align: center; padding: 12px; border: 1px dashed #ccc; border-radius: 8px;">+ Add New Address</button>
         </div>
-        
-        <div id="cart-summary" class="cart-summary hidden">
-            <div class="total-text">Total: ₹<span id="total-price">0.00</span></div>
+    </div>
+
+    <div id="cart-summary" class="cart-summary hidden">
+        <div class="summary-inner">
+            <div class="total-text">Total: $<span id="total-price">0.00</span></div>
             <button class="checkout-btn" onclick="placeOrder()">Place Order</button>
         </div>
     </div>
 
-    <!-- Address Modal -->
     <div id="address-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3 style="margin-bottom: 20px; font-size: 20px;">Add Address</h3>
-            <div class="form-group">
-                <label class="form-label">Label (e.g. Home, Work)</label>
-                <input type="text" id="address-label" class="form-input" placeholder="Home">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Address Line 1</label>
-                <input type="text" id="address-line1" class="form-input" placeholder="123 Main St">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Address Line 2 (Optional)</label>
-                <input type="text" id="address-line2" class="form-input" placeholder="Apt 4B">
-            </div>
-            <div class="form-group">
-                <label class="form-label">City</label>
-                <input type="text" id="address-city" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">State</label>
-                <input type="text" id="address-state" class="form-input">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Postal Code</label>
-                <input type="text" id="address-postal" class="form-input">
-            </div>
+            <div class="form-group"><label class="form-label">Label (Home, Work)</label><input type="text" id="address-label" class="form-input" placeholder="Home"></div>
+            <div class="form-group"><label class="form-label">Address Line 1</label><input type="text" id="address-line1" class="form-input" placeholder="123 Main St"></div>
+            <div class="form-group"><label class="form-label">Address Line 2 (Optional)</label><input type="text" id="address-line2" class="form-input" placeholder="Apt 4B"></div>
+            <div class="form-group"><label class="form-label">City</label><input type="text" id="address-city" class="form-input"></div>
+            <div class="form-group"><label class="form-label">State</label><input type="text" id="address-state" class="form-input"></div>
+            <div class="form-group"><label class="form-label">Postal Code</label><input type="text" id="address-postal" class="form-input"></div>
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button onclick="hideAddressModal()" style="flex: 1; padding: 12px; background: #f0f0f0; border-radius: 8px;">Cancel</button>
-                <button onclick="saveAddress()" style="flex: 1; padding: 12px; background: #111; color: white; border-radius: 8px;">Save</button>
+                <button onclick="hideAddressModal()" style="flex: 1; padding: 14px; background: #f0f0f0; border-radius: 8px; font-size: 16px;">Cancel</button>
+                <button onclick="saveAddress()" style="flex: 1; padding: 14px; background: #111; color: white; border-radius: 8px; font-size: 16px;">Save</button>
             </div>
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://orbaakzywwwiiemyszmd.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK';
-        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        let currentUser = null;
-        let currentCustomer = null;
-        let selectedAddressId = null;
-        let addresses = [];
-
+        const SUPABASE_URL = 'https://orbaakzywwwiiemyszmd.supabase.co'; const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK'; const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let cart = JSON.parse(localStorage.getItem('cart')) || []; let currentUser = null; let currentCustomer = null; let selectedAddressId = null; let addresses = [];
         async function initCart() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) {
-                window.location.href = 'index.html';
-                return;
-            }
+            const { data: { session } } = await sb.auth.getSession(); if (!session) { window.location.href = 'index.html'; return; }
             currentUser = session.user;
-            
-            // Fetch or create customer profile
             const { data: custData } = await sb.from('customers').select('*').eq('user_id', currentUser.id).maybeSingle();
-            if (custData) {
-                currentCustomer = custData;
-            } else {
-                const { data: newCust } = await sb.from('customers').insert({ 
-                    user_id: currentUser.id, 
-                    email: currentUser.email 
-                }).select().single();
-                currentCustomer = newCust;
-            }
-
-            renderCart();
-            await loadAddresses();
+            if (custData) currentCustomer = custData; else { const { data: newCust } = await sb.from('customers').insert({ user_id: currentUser.id, email: currentUser.email }).select().single(); currentCustomer = newCust; }
+            renderCart(); await loadAddresses();
         }
-
         function renderCart() {
-            const container = document.getElementById('cart-items');
-            const summary = document.getElementById('cart-summary');
-            const addressSection = document.getElementById('address-section');
-            
-            if (cart.length === 0) {
-                container.innerHTML = `<div class="empty-cart">Your cart is empty.</div>`;
-                summary.classList.add('hidden');
-                addressSection.classList.add('hidden');
-                return;
-            }
-
+            const container = document.getElementById('cart-items'); const summary = document.getElementById('cart-summary'); const addressSection = document.getElementById('address-section');
+            if (cart.length === 0) { container.innerHTML = `<div class="empty-cart">Your cart is empty.</div>`; summary.classList.add('hidden'); addressSection.classList.add('hidden'); return; }
             let total = 0;
             container.innerHTML = cart.map((item, index) => {
                 total += parseFloat(item.price);
-                return `
-                    <div class="cart-item">
-                        <div>
-                            <div class="item-name">${item.name}</div>
-                            <div class="item-price">₹${parseFloat(item.price).toFixed(2)}</div>
-                        </div>
-                        <button onclick="removeItem(${index})" style="color: #D32F2F; font-size: 14px;">Remove</button>
-                    </div>
-                `;
+                return `<div class="cart-item"><div class="item-header"><div><div class="item-name">${item.name}</div><div class="item-price">$${parseFloat(item.price).toFixed(2)}</div></div><button class="remove-btn" onclick="removeItem(${index})">Remove</button></div></div>`;
             }).join('');
-
             document.getElementById('total-price').innerText = total.toFixed(2);
-            summary.classList.remove('hidden');
-            addressSection.classList.remove('hidden');
+            summary.classList.remove('hidden'); addressSection.classList.remove('hidden');
         }
-
         async function loadAddresses() {
-            const { data, error } = await sb.from('addresses').select('*').eq('user_id', currentUser.id);
-            const list = document.getElementById('address-list');
-            addresses = data || [];
-            
-            if (error || addresses.length === 0) {
-                list.innerHTML = `<p style="color: #666;">No addresses saved. Please add one to continue.</p>`;
-                selectedAddressId = null;
-                return;
-            }
-
-            list.innerHTML = addresses.map(addr => `
-                <div class="address-option ${selectedAddressId === addr.id ? 'selected' : ''}" onclick="selectAddress('${addr.id}')">
-                    <div class="address-label">${addr.label || 'Address'}</div>
-                    <div class="address-text">
-                        ${addr.address_line1}, ${addr.address_line2 ? addr.address_line2 + ', ' : ''}
-                        ${addr.city}, ${addr.state} ${addr.postal_code}
-                    </div>
-                </div>
-            `).join('');
+            const { data } = await sb.from('addresses').select('*').eq('user_id', currentUser.id); const list = document.getElementById('address-list'); addresses = data || [];
+            if (!addresses.length) { list.innerHTML = `<p style="color: #666;">No addresses saved. Please add one to continue.</p>`; selectedAddressId = null; return; }
+            list.innerHTML = addresses.map(addr => `<div class="address-option ${selectedAddressId === addr.id ? 'selected' : ''}" onclick="selectAddress('${addr.id}')"><div class="address-label">${addr.label || 'Address'}</div><div class="address-text">${addr.address_line1}, ${addr.address_line2 ? addr.address_line2 + ', ' : ''}${addr.city}, ${addr.state} ${addr.postal_code}</div></div>`).join('');
         }
-
-        function selectAddress(id) {
-            selectedAddressId = id;
-            loadAddresses();
-        }
-
-        function showAddressModal() {
-            document.getElementById('address-modal').classList.remove('hidden');
-        }
-
-        function hideAddressModal() {
-            document.getElementById('address-modal').classList.add('hidden');
-            document.querySelectorAll('#address-modal input').forEach(input => input.value = '');
-        }
-
+        function selectAddress(id) { selectedAddressId = id; loadAddresses(); }
+        function showAddressModal() { document.getElementById('address-modal').classList.remove('hidden'); }
+        function hideAddressModal() { document.getElementById('address-modal').classList.add('hidden'); document.querySelectorAll('#address-modal input').forEach(input => input.value = ''); }
         async function saveAddress() {
-            const newAddress = {
-                user_id: currentUser.id,
-                customer_id: currentCustomer ? currentCustomer.id : null,
-                label: document.getElementById('address-label').value,
-                address_line1: document.getElementById('address-line1').value,
-                address_line2: document.getElementById('address-line2').value,
-                city: document.getElementById('address-city').value,
-                state: document.getElementById('address-state').value,
-                postal_code: document.getElementById('address-postal').value
-            };
-
-            if (!newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) {
-                return alert("Please fill in all required fields.");
-            }
-
-            const { data, error } = await sb.from('addresses').insert([newAddress]).select();
-            if (error) {
-                return alert("Error saving address: " + error.message);
-            }
-
-            if (data && data.length > 0) {
-                selectedAddressId = data[0].id;
-            }
-
-            hideAddressModal();
-            await loadAddresses();
+            const newAddress = { user_id: currentUser.id, customer_id: currentCustomer ? currentCustomer.id : null, label: document.getElementById('address-label').value, address_line1: document.getElementById('address-line1').value, address_line2: document.getElementById('address-line2').value, city: document.getElementById('address-city').value, state: document.getElementById('address-state').value, postal_code: document.getElementById('address-postal').value };
+            if (!newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) return alert("Please fill required fields.");
+            const { data, error } = await sb.from('addresses').insert([newAddress]).select(); if (error) return alert("Error: " + error.message);
+            if (data && data.length > 0) selectedAddressId = data[0].id; hideAddressModal(); await loadAddresses();
         }
-
-        function removeItem(index) {
-            cart.splice(index, 1);
-            localStorage.setItem('cart', JSON.stringify(cart));
-            renderCart();
-        }
-
-        function goBack() {
-            window.location.href = 'index.html';
-        }
-
-        async function placeOrder() {
-            if (!selectedAddressId) {
-                alert("Please select a delivery address to place your order.");
-                return;
-            }
-
-            alert("Order placed successfully! (PoC simulation)");
-            localStorage.removeItem('cart');
-            window.location.href = 'index.html';
-        }
-
-        // Init
+        function removeItem(index) { cart.splice(index, 1); localStorage.setItem('cart', JSON.stringify(cart)); renderCart(); }
+        function goBack() { window.location.href = 'index.html'; }
+        async function placeOrder() { if (!selectedAddressId) { alert("Please select a delivery address."); return; } alert("Order placed successfully!"); localStorage.removeItem('cart'); window.location.href = 'index.html'; }
         initCart();
     </script>
 </body>
