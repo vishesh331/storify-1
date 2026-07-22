@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cart | Minimalist</title>
+    <title>Profile | Minimalist</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -12,35 +12,30 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; text-decoration: none; }
-        input { font-family: inherit; }
+        input, select { font-family: inherit; }
         
         nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(20px); background: rgba(250,250,250,0.8); border-bottom: 1px solid var(--border); }
         .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 60px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
         .nav-logo { font-weight: 600; font-size: 18px; }
         
-        .cart-container { max-width: 800px; margin: 40px auto; padding: 0 24px; }
+        .profile-container { max-width: 800px; margin: 40px auto; padding: 0 24px; }
         h1 { font-size: 32px; font-weight: 600; margin-bottom: 32px; }
         h2 { font-size: 20px; font-weight: 600; margin: 40px 0 16px; }
         
-        .cart-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 20px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
-        .item-name { font-weight: 500; }
-        .item-price { color: var(--muted); font-size: 14px; margin-top: 4px; }
+        .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .btn-primary { background: #111; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 500; }
+        .btn-secondary { background: #f0f0f0; color: #111; padding: 10px 20px; border-radius: 8px; font-weight: 500; margin-left: 12px; }
         
-        .address-option { border: 2px solid #eee; padding: 16px; border-radius: 8px; margin-bottom: 12px; cursor: pointer; }
-        .address-option.selected { border-color: #111; }
-        .address-label { font-weight: 600; text-transform: capitalize; }
-        .address-text { color: var(--muted); font-size: 14px; margin-top: 4px; }
-        
-        .cart-summary { margin-top: 40px; text-align: right; }
-        .total-text { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-        .checkout-btn { background: #111; color: white; padding: 16px 32px; border-radius: 100px; font-size: 16px; font-weight: 500; }
-        .empty-cart { text-align: center; padding: 80px 0; color: var(--muted); }
+        .address-card { border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; position: relative; }
+        .address-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; text-transform: capitalize; }
+        .address-text { font-size: 14px; color: var(--muted); line-height: 1.4; }
+        .delete-btn { position: absolute; top: 16px; right: 16px; color: #D32F2F; font-size: 12px; }
         
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+        .modal-box { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 500px; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -49,30 +44,40 @@
     <nav>
         <div class="nav-inner">
             <a href="index.html" class="nav-logo">Minimalist</a>
-            <button onclick="goBack()">Continue Shopping</button>
+            <button onclick="logout()">Logout</button>
         </div>
     </nav>
 
-    <div class="cart-container">
-        <h1>Your Cart</h1>
-        <div id="cart-items"></div>
+    <div class="profile-container">
+        <h1>My Profile</h1>
         
-        <div id="address-section" class="hidden">
-            <h2>Select Delivery Address</h2>
-            <div id="address-list"></div>
-            <button onclick="showAddressModal()" style="color: #111; font-weight: 500; margin-top: 8px;">+ Add New Address</button>
+        <h2>Personal Details</h2>
+        <div class="card">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="profile-email" class="form-input" disabled style="background: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" id="profile-name" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mobile Number</label>
+                <input type="text" id="profile-mobile" class="form-input">
+            </div>
+            <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
         </div>
-        
-        <div id="cart-summary" class="cart-summary hidden">
-            <div class="total-text">Total: $<span id="total-price">0.00</span></div>
-            <button class="checkout-btn" onclick="placeOrder()">Place Order</button>
-        </div>
+
+        <h2>Saved Addresses</h2>
+        <div id="addresses-list"></div>
+        <button class="btn-secondary" style="margin-left: 0; margin-top: 8px;" onclick="showAddressModal()">+ Add New Address</button>
     </div>
 
     <!-- Address Modal -->
     <div id="address-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <h3 style="margin-bottom: 20px; font-size: 20px;">Add Address</h3>
+            <input type="hidden" id="address-id">
             <div class="form-group">
                 <label class="form-label">Label (e.g. Home, Work)</label>
                 <input type="text" id="address-label" class="form-input" placeholder="Home">
@@ -98,8 +103,8 @@
                 <input type="text" id="address-postal" class="form-input">
             </div>
             <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button onclick="hideAddressModal()" style="flex: 1; padding: 12px; background: #f0f0f0; border-radius: 8px;">Cancel</button>
-                <button onclick="saveAddress()" style="flex: 1; padding: 12px; background: #111; color: white; border-radius: 8px;">Save</button>
+                <button class="btn-secondary" style="margin: 0; flex: 1;" onclick="hideAddressModal()">Cancel</button>
+                <button class="btn-primary" style="flex: 1;" onclick="saveAddress()">Save Address</button>
             </div>
         </div>
     </div>
@@ -109,92 +114,76 @@
         const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let currentUser = null;
         let currentCustomer = null;
-        let selectedAddressId = null;
-        let addresses = [];
 
-        async function initCart() {
+        async function initProfile() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) {
                 window.location.href = 'index.html';
                 return;
             }
             currentUser = session.user;
-            
-            // Fetch or create customer profile
+            document.getElementById('profile-email').value = currentUser.email;
+
+            // Fetch customer data
             const { data: custData } = await sb.from('customers').select('*').eq('user_id', currentUser.id).maybeSingle();
+            
             if (custData) {
+                // Profile exists
                 currentCustomer = custData;
+                document.getElementById('profile-name').value = custData.full_name || '';
+                document.getElementById('profile-mobile').value = custData.mobile_number || '';
             } else {
-                const { data: newCust } = await sb.from('customers').insert({ 
-                    user_id: currentUser.id, 
-                    email: currentUser.email 
+                // Profile doesn't exist (e.g. older account), create it
+                const { data: newCust, error } = await sb.from('customers').insert({
+                    user_id: currentUser.id,
+                    email: currentUser.email
                 }).select().single();
-                currentCustomer = newCust;
+                
+                if (error) {
+                    console.error("Error creating profile:", error);
+                } else {
+                    currentCustomer = newCust;
+                }
             }
 
-            renderCart();
             await loadAddresses();
         }
 
-        function renderCart() {
-            const container = document.getElementById('cart-items');
-            const summary = document.getElementById('cart-summary');
-            const addressSection = document.getElementById('address-section');
+        async function saveProfile() {
+            const name = document.getElementById('profile-name').value;
+            const mobile = document.getElementById('profile-mobile').value;
             
-            if (cart.length === 0) {
-                container.innerHTML = `<div class="empty-cart">Your cart is empty.</div>`;
-                summary.classList.add('hidden');
-                addressSection.classList.add('hidden');
-                return;
-            }
-
-            let total = 0;
-            container.innerHTML = cart.map((item, index) => {
-                total += parseFloat(item.price);
-                return `
-                    <div class="cart-item">
-                        <div>
-                            <div class="item-name">${item.name}</div>
-                            <div class="item-price">$${parseFloat(item.price).toFixed(2)}</div>
-                        </div>
-                        <button onclick="removeItem(${index})" style="color: #D32F2F; font-size: 14px;">Remove</button>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('total-price').innerText = total.toFixed(2);
-            summary.classList.remove('hidden');
-            addressSection.classList.remove('hidden');
+            const { error } = await sb.from('customers').update({
+                full_name: name,
+                mobile_number: mobile
+            }).eq('user_id', currentUser.id);
+            
+            if (!error) alert("Profile updated successfully!");
+            else alert("Error: " + error.message);
         }
 
         async function loadAddresses() {
             const { data, error } = await sb.from('addresses').select('*').eq('user_id', currentUser.id);
-            const list = document.getElementById('address-list');
-            addresses = data || [];
+            const list = document.getElementById('addresses-list');
             
-            if (error || addresses.length === 0) {
-                list.innerHTML = `<p style="color: #666;">No addresses saved. Please add one to continue.</p>`;
-                selectedAddressId = null;
+            if (error || !data || data.length === 0) {
+                list.innerHTML = `<p style="color: #666; margin-bottom: 16px;">No addresses saved yet.</p>`;
                 return;
             }
 
-            list.innerHTML = addresses.map(addr => `
-                <div class="address-option ${selectedAddressId === addr.id ? 'selected' : ''}" onclick="selectAddress('${addr.id}')">
+            list.innerHTML = data.map(addr => `
+                <div class="address-card">
                     <div class="address-label">${addr.label || 'Address'}</div>
                     <div class="address-text">
-                        ${addr.address_line1}, ${addr.address_line2 ? addr.address_line2 + ', ' : ''}
+                        ${addr.address_line1}<br>
+                        ${addr.address_line2 ? addr.address_line2 + '<br>' : ''}
                         ${addr.city}, ${addr.state} ${addr.postal_code}
                     </div>
+                    <button class="delete-btn" onclick="deleteAddress('${addr.id}')">Delete</button>
                 </div>
             `).join('');
-        }
-
-        function selectAddress(id) {
-            selectedAddressId = id;
-            loadAddresses();
         }
 
         function showAddressModal() {
@@ -222,42 +211,28 @@
                 return alert("Please fill in all required fields.");
             }
 
-            const { data, error } = await sb.from('addresses').insert([newAddress]).select();
+            const { error } = await sb.from('addresses').insert([newAddress]);
             if (error) {
                 return alert("Error saving address: " + error.message);
-            }
-
-            if (data && data.length > 0) {
-                selectedAddressId = data[0].id;
             }
 
             hideAddressModal();
             await loadAddresses();
         }
 
-        function removeItem(index) {
-            cart.splice(index, 1);
-            localStorage.setItem('cart', JSON.stringify(cart));
-            renderCart();
+        async function deleteAddress(id) {
+            if (!confirm("Delete this address?")) return;
+            await sb.from('addresses').delete().eq('id', id);
+            await loadAddresses();
         }
 
-        function goBack() {
-            window.location.href = 'index.html';
-        }
-
-        async function placeOrder() {
-            if (!selectedAddressId) {
-                alert("Please select a delivery address to place your order.");
-                return;
-            }
-
-            alert("Order placed successfully! (PoC simulation)");
-            localStorage.removeItem('cart');
+        async function logout() {
+            await sb.auth.signOut();
             window.location.href = 'index.html';
         }
 
         // Init
-        initCart();
+        initProfile();
     </script>
 </body>
 </html>

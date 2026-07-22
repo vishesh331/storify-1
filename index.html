@@ -48,14 +48,20 @@
         
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideDown { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
         
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; animation: fadeIn 0.2s ease; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; animation: fadeIn 0.2s ease; transition: opacity 0.3s ease; }
+        .modal-overlay.closing { opacity: 0; pointer-events: none; }
         .modal-box { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; }
+        .modal-box.closing { animation: slideDown 0.3s ease forwards; }
         .modal-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; }
         .modal-btn { width: 100%; padding: 12px; background: #111; color: white; border-radius: 8px; font-weight: 500; }
         .hidden { display: none !important; }
         
         .success-icon { width: 60px; height: 60px; background: #E8F5E9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 28px; color: #4CAF50; }
+        
+        .nav-user-link { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: color 0.2s; }
+        .nav-user-link:hover { color: var(--text); }
     </style>
 </head>
 <body>
@@ -80,7 +86,10 @@
                 </div>
                 
                 <div id="user-section" class="hidden" style="display: flex; align-items: center; gap: 16px;">
-                    <span id="user-email" style="color:#111; font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                    <div class="nav-user-link" onclick="window.location.href='profile.html'">
+                        <span id="user-email" style="color:#111; font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
                     <button onclick="logout()" style="color: #666;">Logout</button>
                 </div>
             </div>
@@ -100,11 +109,16 @@
 
     <!-- Auth Modal -->
     <div id="auth-modal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <!-- Default Auth Form -->
+        <div class="modal-box" id="modal-box-content">
             <div id="auth-form-container">
                 <form onsubmit="event.preventDefault(); handleAuth();">
                     <h3 id="modal-title" style="margin-bottom: 20px; font-size: 20px;">Login</h3>
+                    
+                    <div id="signup-fields" class="hidden">
+                        <input type="text" id="signup-name" class="modal-input" placeholder="Full Name">
+                        <input type="text" id="signup-mobile" class="modal-input" placeholder="Mobile Number">
+                    </div>
+                    
                     <input type="email" id="auth-email" class="modal-input" placeholder="Email" required>
                     <input type="password" id="auth-pass" class="modal-input" placeholder="Password" required>
                     <button type="submit" id="submit-auth-btn" class="modal-btn">Submit</button>
@@ -112,7 +126,6 @@
                 <button onclick="hideAuthModal()" style="width: 100%; padding: 12px; margin-top: 10px; color: #666;">Cancel</button>
             </div>
             
-            <!-- Success Message (Hidden by default) -->
             <div id="auth-success-container" class="hidden">
                 <div class="success-icon">✓</div>
                 <h3 style="margin-bottom: 12px; font-size: 20px;">Verify your email</h3>
@@ -153,27 +166,50 @@
         // --- Auth Logic ---
         function showAuthModal(mode) {
             authMode = mode;
-            // Reset to form view
             document.getElementById('auth-form-container').classList.remove('hidden');
             document.getElementById('auth-success-container').classList.add('hidden');
             
-            document.getElementById('modal-title').innerText = mode === 'login' ? 'Login' : 'Sign Up';
-            document.getElementById('submit-auth-btn').innerText = mode === 'login' ? 'Log In' : 'Sign Up';
+            const isSignup = mode === 'signup';
+            document.getElementById('modal-title').innerText = isSignup ? 'Sign Up' : 'Login';
+            document.getElementById('submit-auth-btn').innerText = isSignup ? 'Sign Up' : 'Log In';
+            
+            // Show/hide extra fields
+            if (isSignup) {
+                document.getElementById('signup-fields').classList.remove('hidden');
+            } else {
+                document.getElementById('signup-fields').classList.add('hidden');
+            }
+            
             document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('modal-box-content').classList.remove('closing');
         }
 
         function hideAuthModal() { 
-            document.getElementById('auth-modal').classList.add('hidden'); 
-            document.getElementById('auth-email').value = '';
-            document.getElementById('auth-pass').value = '';
+            const modal = document.getElementById('auth-modal');
+            const box = document.getElementById('modal-box-content');
+            
+            box.classList.add('closing');
+            modal.classList.add('closing');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('closing');
+                box.classList.remove('closing');
+                
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-pass').value = '';
+                if (document.getElementById('signup-name')) document.getElementById('signup-name').value = '';
+                if (document.getElementById('signup-mobile')) document.getElementById('signup-mobile').value = '';
+            }, 300);
         }
 
         function switchToLoginFromSuccess() {
             document.getElementById('auth-form-container').classList.remove('hidden');
             document.getElementById('auth-success-container').classList.add('hidden');
+            authMode = 'login';
             document.getElementById('modal-title').innerText = 'Login';
             document.getElementById('submit-auth-btn').innerText = 'Log In';
-            authMode = 'login';
+            document.getElementById('signup-fields').classList.add('hidden');
             document.getElementById('auth-email').value = '';
             document.getElementById('auth-pass').value = '';
         }
@@ -186,17 +222,26 @@
                 if (authMode === 'login') {
                     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
                     if (error) throw error;
-                    
                     if (data.user) {
-                        hideAuthModal(); // Close popup on success
+                        hideAuthModal();
                         updateUI(data.user);
                     }
                 } else {
+                    const fullName = document.getElementById('signup-name').value;
+                    const mobile = document.getElementById('signup-mobile').value;
+                    
                     const { data, error } = await sb.auth.signUp({ email, password: pass });
                     if (error) throw error;
                     
                     if (data.user) {
-                        // Show success message instead of closing modal
+                        // Create customer record with new fields
+                        await sb.from('customers').insert({ 
+                            user_id: data.user.id, 
+                            email: email,
+                            full_name: fullName,
+                            mobile_number: mobile
+                        });
+                        
                         document.getElementById('auth-form-container').classList.add('hidden');
                         document.getElementById('auth-success-container').classList.remove('hidden');
                     }
