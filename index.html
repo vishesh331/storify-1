@@ -3,161 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Minimalist | Premium Goods</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #F0F2F5; --card: #FFFFFF; --text: #111111; --muted: #666666; --border: #E5E5E5; }
+        :root { --bg: #FAFAFA; --card: #FFFFFF; --text: #111111; --muted: #666666; --border: #E5E5E5; --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.04); }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
-        input, select { font-family: inherit; }
-
-        .login-container { display: flex; align-items: center; justify-content: center; height: 100vh; background: #111; }
-        .login-box { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; }
-        .login-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; }
-        .login-btn { width: 100%; padding: 12px; background: #111; color: white; border-radius: 8px; }
-
-        .admin-layout { display: flex; height: 100vh; }
-        .sidebar { width: 240px; background: #111111; color: white; padding: 32px 0; display: flex; flex-direction: column; }
-        .sidebar-logo { padding: 0 24px 32px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; }
-        .sidebar nav { display: flex; flex-direction: column; gap: 4px; padding: 0 16px; flex: 1; }
-        .sidebar nav button { text-align: left; padding: 12px 16px; color: rgba(255,255,255,0.6); border-radius: 8px; font-size: 14px; transition: all 0.2s; }
-        .sidebar nav button:hover, .sidebar nav button.active { background: rgba(255,255,255,0.1); color: white; }
-        .admin-main { flex: 1; overflow-y: auto; padding: 40px; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-        .admin-title { font-size: 24px; font-weight: 600; }
-        .admin-btn { background: #111; color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; }
+        input { font-family: inherit; }
         
-        .admin-table { width: 100%; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border-collapse: collapse; }
-        .admin-table th { text-align: left; padding: 16px; font-size: 12px; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); background: #FAFAFA; }
-        .admin-table td { padding: 16px; border-bottom: 1px solid #F5F5F5; font-size: 14px; vertical-align: middle; }
-        .admin-table tr:last-child td { border-bottom: none; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(20px); background: rgba(250,250,250,0.8); border-bottom: 1px solid var(--border); }
+        .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 60px; gap: 24px; }
+        .nav-logo { font-weight: 600; font-size: 18px; letter-spacing: -0.5px; flex-shrink: 0; }
+        .nav-links { display: flex; gap: 24px; align-items: center; font-size: 14px; color: var(--muted); flex-shrink: 0; }
         
-        .status-select { padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 13px; }
+        .nav-search-container { flex-grow: 1; display: flex; justify-content: center; }
+        .nav-search-btn { font-size: 16px; display: flex; align-items: center; gap: 6px; transition: color 0.2s; }
+        .nav-search-btn:hover { color: var(--text); }
+        .nav-search-input { width: 100%; max-width: 400px; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); font-size: 14px; outline: none; transition: border 0.2s; }
+        .nav-search-input:focus { border-color: var(--text); }
         
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: white; padding: 32px; border-radius: 16px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-        .modal-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
-        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
-        .form-actions { display: flex; gap: 12px; margin-top: 24px; }
-        .btn-primary { flex: 1; padding: 12px; background: #111; color: white; border-radius: 8px; font-weight: 500; }
-        .btn-secondary { flex: 1; padding: 12px; background: #f0f0f0; color: #111; border-radius: 8px; font-weight: 500; }
+        .auth-buttons { display: flex; align-items: center; gap: 16px; } 
         
-        .action-btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; margin-right: 8px; }
-        .btn-edit { background: #E5E5E5; }
-        .btn-delete { background: #FFE5E5; color: #D32F2F; }
-
+        .hero { text-align: center; padding: 120px 0 80px; }
+        .hero h1 { font-size: 48px; font-weight: 600; letter-spacing: -1.5px; margin-bottom: 16px; }
+        .hero p { color: var(--muted); margin-bottom: 32px; }
+        .hero-search-bar { width: 100%; max-width: 500px; margin: 0 auto; padding: 16px 24px; border-radius: 100px; border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow); font-size: 16px; outline: none; transition: border 0.2s; }
+        .hero-search-bar:focus { border-color: var(--text); }
+        
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px; padding-bottom: 120px; }
+        .product-card { background: transparent; transition: transform 0.3s ease; animation: fadeUp 0.5s ease forwards; opacity: 0; cursor: pointer; }
+        .product-card:hover { transform: translateY(-4px); }
+        .product-img-box { background: var(--card); border-radius: var(--radius); aspect-ratio: 1; overflow: hidden; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); }
+        .product-img-box img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .product-card:hover .product-img-box img { transform: scale(1.05); }
+        .product-info { display: flex; justify-content: space-between; align-items: flex-start; }
+        .product-name { font-weight: 500; font-size: 15px; }
+        .product-cat { font-size: 13px; color: var(--muted); margin-top: 4px; }
+        .product-price { font-weight: 500; font-size: 15px; }
+        .add-cart-btn { margin-top: 16px; width: 100%; padding: 10px; background: var(--text); color: white; border-radius: 100px; font-size: 13px; transition: opacity 0.3s, background 0.3s; }
+        
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideDown { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.95); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Auth Modal Styles */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; animation: fadeIn 0.2s ease; transition: opacity 0.3s ease; }
+        .modal-overlay.closing { opacity: 0; pointer-events: none; }
+        .modal-box { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center; transition: transform 0.3s ease; }
+        .modal-box.closing { animation: slideDown 0.3s ease forwards; }
+        .modal-input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; }
+        .modal-btn { width: 100%; padding: 12px; background: #111; color: white; border-radius: 8px; font-weight: 500; }
         .hidden { display: none !important; }
+        
+        .success-icon { width: 60px; height: 60px; background: #E8F5E9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 28px; color: #4CAF50; }
+        
+        .nav-user-link { display: flex; align-items: center; gap: 6px; cursor: pointer; transition: color 0.2s; }
+        .nav-user-link:hover { color: var(--text); }
+
+        /* Product Detail Modal Styles */
+        .product-detail-box { 
+            max-width: 800px; 
+            padding: 0; 
+            text-align: left; 
+            overflow: hidden; 
+            display: flex;
+            max-height: 85vh;
+        }
+        .product-detail-layout { display: flex; width: 100%; height: 100%; }
+        .pd-image { flex: 1; background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 300px; }
+        .pd-image img { width: 100%; height: 100%; object-fit: cover; }
+        .pd-info { flex: 1; padding: 40px; display: flex; flex-direction: column; overflow-y: auto; }
+        .pd-cat { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 8px; }
+        .pd-name { font-size: 28px; font-weight: 600; line-height: 1.2; margin-bottom: 8px; }
+        .pd-price { font-size: 20px; font-weight: 500; margin-bottom: 24px; color: var(--text); }
+        .pd-desc { font-size: 14px; color: #444; line-height: 1.6; flex-grow: 1; margin-bottom: 24px; }
+        .add-cart-btn-modal { width: 100%; padding: 14px; background: #111; color: white; border-radius: 100px; font-size: 15px; font-weight: 500; transition: background 0.2s; }
+        .add-cart-btn-modal:hover { background: #333; }
+        .close-detail-btn { width: 100%; padding: 12px; margin-top: 8px; background: none; color: var(--muted); font-size: 14px; text-align: center; }
+        
+        @media (max-width: 768px) {
+            .product-detail-box { flex-direction: column; max-width: 90vw; }
+            .pd-image { min-height: 200px; max-height: 35vh; }
+            .pd-info { padding: 24px; }
+            .pd-name { font-size: 22px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Login View -->
-    <div id="login-view" class="login-container">
-        <div class="login-box">
-            <h3 style="margin-bottom: 20px; font-size: 20px;">Admin Login</h3>
-            <input type="email" id="admin-email" class="login-input" placeholder="Email">
-            <input type="password" id="admin-pass" class="login-input" placeholder="Password">
-            <button class="login-btn" onclick="loginAdmin()">Log In</button>
+    <nav>
+        <div class="container nav-inner">
+            <div class="nav-logo">Minimalist</div>
+            
+            <div class="nav-search-container">
+                <button id="search-toggle" class="nav-search-btn" onclick="toggleNavSearch()">
+                    🔍 <span>Search</span>
+                </button>
+                <input type="text" id="nav-search-input" class="nav-search-input hidden" placeholder="Search products..." oninput="filterProducts(this.value)">
+            </div>
+            
+            <div class="nav-links">
+                <button onclick="checkout()">Checkout (<span id="cart-count">0</span>)</button>
+                
+                <div id="auth-section" class="auth-buttons">
+                    <button onclick="showAuthModal('login')">Login</button>
+                    <button onclick="showAuthModal('signup')">Sign Up</button>
+                </div>
+                
+                <div id="user-section" class="hidden" style="display: flex; align-items: center; gap: 16px;">
+                    <div class="nav-user-link" onclick="window.location.href='profile.html'">
+                        <span id="user-name" style="color:#111; font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </div>
+                    <button onclick="logout()" style="color: #666;">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero">
+            <h1>What are you looking for today?</h1>
+            <p>Find curated, premium goods designed with intention.</p>
+            <input type="text" class="hero-search-bar" placeholder="Search products..." oninput="filterProducts(this.value)">
+        </div>
+        <div class="product-grid" id="product-grid">
+            <div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;">Loading products...</div>
         </div>
     </div>
 
-    <!-- Admin Dashboard View -->
-    <div id="dashboard-view" class="admin-layout hidden">
-        <aside class="sidebar">
-            <div class="sidebar-logo">Admin Panel</div>
-            <nav>
-                <button onclick="switchTab('inventory')" id="tab-inventory" class="active">Inventory</button>
-                <button onclick="switchTab('orders')" id="tab-orders">Orders</button>
-                <button onclick="logout()" style="margin-top: auto; color: rgba(255,255,255,0.4);">Logout</button>
-            </nav>
-        </aside>
-        <main class="admin-main">
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div class="modal-box" id="modal-box-content">
+            <div id="auth-form-container">
+                <form onsubmit="event.preventDefault(); handleAuth();">
+                    <h3 id="modal-title" style="margin-bottom: 20px; font-size: 20px;">Login</h3>
+                    
+                    <div id="signup-fields" class="hidden">
+                        <input type="text" id="signup-name" class="modal-input" placeholder="Full Name">
+                        <input type="text" id="signup-mobile" class="modal-input" placeholder="Mobile Number">
+                    </div>
+                    
+                    <input type="email" id="auth-email" class="modal-input" placeholder="Email" required>
+                    <input type="password" id="auth-pass" class="modal-input" placeholder="Password" required>
+                    <button type="submit" id="submit-auth-btn" class="modal-btn">Submit</button>
+                </form>
+                <button onclick="hideAuthModal()" style="width: 100%; padding: 12px; margin-top: 10px; color: #666;">Cancel</button>
+            </div>
             
-            <!-- Inventory Section -->
-            <div id="inventory-section">
-                <div class="admin-header">
-                    <h1 class="admin-title">Inventory Management</h1>
-                    <button class="admin-btn" onclick="openProductModal()">+ Add Product</button>
-                </div>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Price</th>
-                            <th>Stock Count</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-product-list"></tbody>
-                </table>
+            <div id="auth-success-container" class="hidden">
+                <div class="success-icon">✓</div>
+                <h3 style="margin-bottom: 12px; font-size: 20px;">Verify your email</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.5;">
+                    We've sent a confirmation link to your email. Please click the link to verify your account, then return here to log in.
+                </p>
+                <button class="modal-btn" onclick="switchToLoginFromSuccess()">Continue to Login</button>
             </div>
-
-            <!-- Orders Section -->
-            <div id="orders-section" class="hidden">
-                <div class="admin-header">
-                    <h1 class="admin-title">Order Management</h1>
-                </div>
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Date</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-order-list"></tbody>
-                </table>
-            </div>
-
-        </main>
+        </div>
     </div>
 
-    <!-- Product Add/Edit Modal -->
-    <div id="product-modal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <h3 id="modal-title" class="modal-title">Add Product</h3>
-            <input type="hidden" id="product-id">
-            
-            <div class="form-group">
-                <label class="form-label">Product Name</label>
-                <input type="text" id="product-name" class="form-input" placeholder="e.g. Wireless Headphones">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Price ($)</label>
-                <input type="number" step="0.01" id="product-price" class="form-input" placeholder="e.g. 199.99">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Stock Count</label>
-                <input type="number" id="product-stock" class="form-input" placeholder="e.g. 50">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Image URL</label>
-                <input type="text" id="product-image" class="form-input" placeholder="https://example.com/image.jpg">
-            </div>
-            
-            <!-- Updated Category Dropdown -->
-            <div class="form-group">
-                <label class="form-label">Category</label>
-                <select id="product-category" class="form-input" onchange="handleCategoryChange()">
-                    <option value="">Loading categories...</option>
-                </select>
-                <input type="text" id="new-category-name" class="form-input hidden" style="margin-top: 8px;" placeholder="Enter new category name">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Description (Optional)</label>
-                <textarea id="product-desc" class="form-input" rows="3" placeholder="Short product description..."></textarea>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn-secondary" onclick="closeProductModal()">Cancel</button>
-                <button class="btn-primary" onclick="saveProduct()">Save Product</button>
-            </div>
+    <!-- Product Detail Modal -->
+    <!-- onclick on overlay closes modal, onclick on box stops propagation so it doesn't close when clicking inside -->
+    <div id="product-detail-modal" class="modal-overlay hidden" onclick="closeProductModal()">
+        <div class="modal-box product-detail-box" id="product-detail-box" onclick="event.stopPropagation()">
+            <!-- Content injected by JS -->
         </div>
     </div>
 
@@ -166,274 +180,266 @@
         const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // --- Auth ---
-        async function loginAdmin() {
-            const email = document.getElementById('admin-email').value;
-            const pass = document.getElementById('admin-pass').value;
-            
-            const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-            if (error) return alert("Login failed: " + error.message);
+        let cart = [];
+        let allProducts = []; 
+        let authMode = 'login';
 
-            const { data: adminData } = await sb.from('admins').select('*').eq('user_id', data.user.id).single();
-            if (adminData) {
-                enterDashboard();
+        // --- Search Logic ---
+        function toggleNavSearch() {
+            const btn = document.getElementById('search-toggle');
+            const input = document.getElementById('nav-search-input');
+            btn.classList.toggle('hidden');
+            input.classList.toggle('hidden');
+            if (!input.classList.contains('hidden')) {
+                input.focus();
+            }
+        }
+
+        function filterProducts(query) {
+            query = query.toLowerCase();
+            const filtered = allProducts.filter(p => p.name.toLowerCase().includes(query) || (p.categories?.name || '').toLowerCase().includes(query));
+            renderProducts(filtered);
+        }
+
+        // --- Auth Logic ---
+        function showAuthModal(mode) {
+            authMode = mode;
+            document.getElementById('auth-form-container').classList.remove('hidden');
+            document.getElementById('auth-success-container').classList.add('hidden');
+            
+            const isSignup = mode === 'signup';
+            document.getElementById('modal-title').innerText = isSignup ? 'Sign Up' : 'Login';
+            document.getElementById('submit-auth-btn').innerText = isSignup ? 'Sign Up' : 'Log In';
+            
+            if (isSignup) {
+                document.getElementById('signup-fields').classList.remove('hidden');
             } else {
-                alert("You are not an admin.");
-                await sb.auth.signOut();
+                document.getElementById('signup-fields').classList.add('hidden');
+            }
+            
+            document.getElementById('auth-modal').classList.remove('hidden');
+            document.getElementById('modal-box-content').classList.remove('closing');
+        }
+
+        function hideAuthModal() { 
+            const modal = document.getElementById('auth-modal');
+            const box = document.getElementById('modal-box-content');
+            
+            box.classList.add('closing');
+            modal.classList.add('closing');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('closing');
+                box.classList.remove('closing');
+                
+                document.getElementById('auth-email').value = '';
+                document.getElementById('auth-pass').value = '';
+                if (document.getElementById('signup-name')) document.getElementById('signup-name').value = '';
+                if (document.getElementById('signup-mobile')) document.getElementById('signup-mobile').value = '';
+            }, 300);
+        }
+
+        function switchToLoginFromSuccess() {
+            document.getElementById('auth-form-container').classList.remove('hidden');
+            document.getElementById('auth-success-container').classList.add('hidden');
+            authMode = 'login';
+            document.getElementById('modal-title').innerText = 'Login';
+            document.getElementById('submit-auth-btn').innerText = 'Log In';
+            document.getElementById('signup-fields').classList.add('hidden');
+            document.getElementById('auth-email').value = '';
+            document.getElementById('auth-pass').value = '';
+        }
+
+        async function handleAuth() {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-pass').value;
+            
+            try {
+                if (authMode === 'login') {
+                    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+                    if (error) throw error;
+                    if (data.user) {
+                        hideAuthModal();
+                        await updateUI(data.user);
+                    }
+                } else {
+                    const fullName = document.getElementById('signup-name').value;
+                    const mobile = document.getElementById('signup-mobile').value;
+                    
+                    const { data, error } = await sb.auth.signUp({ email, password: pass });
+                    if (error) throw error;
+                    
+                    if (data.user) {
+                        await sb.from('customers').insert({ 
+                            user_id: data.user.id, 
+                            email: email,
+                            full_name: fullName,
+                            mobile_number: mobile
+                        });
+                        
+                        document.getElementById('auth-form-container').classList.add('hidden');
+                        document.getElementById('auth-success-container').classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                alert("Error: " + error.message);
             }
         }
 
         async function logout() {
             await sb.auth.signOut();
-            document.getElementById('dashboard-view').classList.add('hidden');
-            document.getElementById('login-view').classList.remove('hidden');
+            updateUI(null);
         }
 
-        // --- Dashboard Logic ---
-        async function enterDashboard() {
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('dashboard-view').classList.remove('hidden');
-            await loadCategories(); // Load categories first
-            loadInventory();
-            loadOrders();
-        }
-
-        function switchTab(tab) {
-            if (tab === 'inventory') {
-                document.getElementById('inventory-section').classList.remove('hidden');
-                document.getElementById('orders-section').classList.add('hidden');
-                document.getElementById('tab-inventory').classList.add('active');
-                document.getElementById('tab-orders').classList.remove('active');
+        async function updateUI(user) {
+            const nameElement = document.getElementById('user-name');
+            
+            if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('user-section').classList.remove('hidden');
+                document.getElementById('user-section').style.display = 'flex';
+                
+                nameElement.innerText = 'Profile'; 
+                
+                try {
+                    const { data: custData } = await sb.from('customers').select('full_name').eq('user_id', user.id).maybeSingle();
+                    if (custData && custData.full_name) {
+                        const firstName = custData.full_name.split(' ')[0];
+                        nameElement.innerText = firstName;
+                    } else {
+                        nameElement.innerText = user.email.split('@')[0];
+                    }
+                } catch (e) {
+                    nameElement.innerText = user.email.split('@')[0];
+                }
             } else {
-                document.getElementById('inventory-section').classList.add('hidden');
-                document.getElementById('orders-section').classList.remove('hidden');
-                document.getElementById('tab-inventory').classList.remove('active');
-                document.getElementById('tab-orders').classList.add('active');
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('auth-section').style.display = 'flex';
+                document.getElementById('user-section').classList.add('hidden');
+                document.getElementById('user-section').style.display = 'none';
             }
         }
 
-        // --- Category Logic ---
-        async function loadCategories(selectedId = null) {
-            const { data, error } = await sb.from('categories').select('*').order('name', { ascending: true });
-            const select = document.getElementById('product-category');
-            
-            if (error) {
-                select.innerHTML = '<option value="">Error loading categories</option>';
+        // --- Storefront Logic ---
+        async function loadProducts() {
+            const { data, error } = await sb.from('products').select('*, categories(name)').eq('is_active', true);
+            if (error || data.length === 0) {
+                document.getElementById('product-grid').innerHTML = `<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;">No products found. Add some in the Admin panel!</div>`;
                 return;
             }
-
-            let options = '<option value="">+ Create New Category</option>';
-            data.forEach(cat => {
-                options += `<option value="${cat.id}" ${selectedId === cat.id ? 'selected' : ''}>${cat.name}</option>`;
-            });
-            select.innerHTML = options;
+            allProducts = data;
+            renderProducts(allProducts);
         }
 
-        function handleCategoryChange() {
-            const select = document.getElementById('product-category');
-            const newCatInput = document.getElementById('new-category-name');
-            
-            if (select.value === "") {
-                newCatInput.classList.remove('hidden');
-                newCatInput.focus();
-            } else {
-                newCatInput.classList.add('hidden');
-                newCatInput.value = ''; // clear if they switch back
-            }
-        }
-
-        // --- Inventory Logic ---
-        async function loadInventory() {
-            const { data } = await sb.from('products').select('*, categories(name)').order('created_at', { ascending: false });
-            const list = document.getElementById('admin-product-list');
-            
-            if (!data || data.length === 0) {
-                list.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color:#666;">No products found. Click "Add Product" to create one.</td></tr>`;
+        function renderProducts(products) {
+            const grid = document.getElementById('product-grid');
+            if (products.length === 0) {
+                grid.innerHTML = `<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;">No products match your search.</div>`;
                 return;
             }
-
-            list.innerHTML = data.map(p => `
-                <tr>
-                    <td>
-                        <div style="font-weight: 500;">${p.name}</div>
-                        <div style="font-size: 12px; color: #666;">${p.categories?.name || 'Uncategorized'}</div>
-                    </td>
-                    <td>$${parseFloat(p.price).toFixed(2)}</td>
-                    <td>${p.inventory_count}</td>
-                    <td>
-                        <button class="action-btn btn-edit" onclick="openProductModal('${p.id}')">Edit</button>
-                        <button class="action-btn btn-delete" onclick="deleteProduct('${p.id}')">Delete</button>
-                    </td>
-                </tr>
+            grid.innerHTML = products.map((p, index) => `
+                <div class="product-card" style="animation-delay: ${index * 0.05}s;" onclick="openProductModal('${p.id}')">
+                    <div class="product-img-box">
+                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" alt="${p.name}">
+                    </div>
+                    <div class="product-info">
+                        <div>
+                            <div class="product-name">${p.name}</div>
+                            <div class="product-cat">${p.categories?.name || 'Uncategorized'}</div>
+                        </div>
+                        <div class="product-price">$${p.price}</div>
+                    </div>
+                    <!-- stopPropagation prevents opening modal when clicking add to cart -->
+                    <button class="add-cart-btn" onclick="event.stopPropagation(); addToCart('${p.id}', \`${p.name.replace(/`/g, '')}\`, ${p.price}, this)">Add to Cart</button>
+                </div>
             `).join('');
         }
 
-        // --- Product Modal (Add/Edit) ---
-        async function openProductModal(id = null) {
-            const modal = document.getElementById('product-modal');
-            const title = document.getElementById('modal-title');
+        // --- Product Detail Modal Logic ---
+        function openProductModal(id) {
+            const product = allProducts.find(p => p.id === id);
+            if (!product) return;
             
-            // Clear fields
-            document.getElementById('product-id').value = '';
-            document.getElementById('product-name').value = '';
-            document.getElementById('product-price').value = '';
-            document.getElementById('product-stock').value = '';
-            document.getElementById('product-image').value = '';
-            document.getElementById('product-desc').value = '';
-            document.getElementById('new-category-name').value = '';
-            document.getElementById('new-category-name').classList.add('hidden');
-
-            // Ensure categories are loaded
-            await loadCategories();
-
-            if (id) {
-                // Edit mode
-                title.innerText = "Edit Product";
-                const { data } = await sb.from('products').select('*, categories(name)').eq('id', id).single();
-                if (data) {
-                    document.getElementById('product-id').value = data.id;
-                    document.getElementById('product-name').value = data.name;
-                    document.getElementById('product-price').value = data.price;
-                    document.getElementById('product-stock').value = data.inventory_count;
-                    document.getElementById('product-image').value = data.image_url || '';
-                    document.getElementById('product-desc').value = data.description || '';
-                    
-                    // Set the category dropdown to the current product's category
-                    if (data.category_id) {
-                        await loadCategories(data.category_id);
-                    }
-                }
-            } else {
-                // Add mode
-                title.innerText = "Add Product";
-            }
+            const box = document.getElementById('product-detail-box');
+            box.innerHTML = `
+                <div class="product-detail-layout">
+                    <div class="pd-image">
+                        <img src="${product.image_url || 'https://via.placeholder.com/600'}" alt="${product.name}">
+                    </div>
+                    <div class="pd-info">
+                        <span class="pd-cat">${product.categories?.name || 'Uncategorized'}</span>
+                        <h2 class="pd-name">${product.name}</h2>
+                        <p class="pd-price">$${parseFloat(product.price).toFixed(2)}</p>
+                        <div class="pd-desc">${product.description || 'No description available for this product.'}</div>
+                        <button class="add-cart-btn-modal" onclick="addToCart('${product.id}', \`${product.name.replace(/`/g, '')}\`, ${product.price}, this)">Add to Cart</button>
+                        <button class="close-detail-btn" onclick="closeProductModal()">Close</button>
+                    </div>
+                </div>
+            `;
             
+            const modal = document.getElementById('product-detail-modal');
             modal.classList.remove('hidden');
+            box.classList.remove('closing');
+            modal.classList.remove('closing');
         }
 
         function closeProductModal() {
-            document.getElementById('product-modal').classList.add('hidden');
+            const modal = document.getElementById('product-detail-modal');
+            const box = document.getElementById('product-detail-box');
+            
+            box.classList.add('closing');
+            modal.classList.add('closing');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('closing');
+                box.classList.remove('closing');
+            }, 300);
         }
 
-        async function saveProduct() {
-            const id = document.getElementById('product-id').value;
-            const name = document.getElementById('product-name').value;
-            const price = parseFloat(document.getElementById('product-price').value);
-            const stock = parseInt(document.getElementById('product-stock').value);
-            const image = document.getElementById('product-image').value;
-            const desc = document.getElementById('product-desc').value;
-
-            if (!name || isNaN(price) || isNaN(stock)) {
-                return alert("Please fill in Name, Price, and Stock Count.");
-            }
-
-            // Handle Category Selection
-            const categorySelect = document.getElementById('product-category');
-            const newCatInput = document.getElementById('new-category-name');
-            let categoryId = categorySelect.value; // Will be UUID if existing, or "" if creating new
-
-            if (categoryId === "") {
-                // Admin selected "Create New Category"
-                const newCatName = newCatInput.value.trim();
-                if (newCatName) {
-                    const slug = newCatName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                    const { data: newCat, error: catError } = await sb.from('categories').insert({ name: newCatName, slug: slug }).select('id').single();
-                    
-                    if (catError) {
-                        // If insert failed, maybe the slug already exists?
-                        const { data: existingCat } = await sb.from('categories').select('id').eq('slug', slug).maybeSingle();
-                        if (existingCat) {
-                            categoryId = existingCat.id;
-                        } else {
-                            return alert("Error creating category: " + catError.message);
-                        }
-                    } else {
-                        categoryId = newCat.id;
-                    }
-                } else {
-                    categoryId = null; // Leave uncategorized if they left it blank
-                }
-            }
-
-            // Generate slug from name
-            const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            const slug = id ? baseSlug : `${baseSlug}-${Date.now().toString(36)}`;
-
-            const productData = {
-                name: name,
-                slug: slug,
-                price: price,
-                inventory_count: stock,
-                image_url: image,
-                category_id: categoryId || null,
-                description: desc,
-                is_active: true
-            };
-
-            if (id) {
-                // Update existing
-                const { error } = await sb.from('products').update(productData).eq('id', id);
-                if (error) return alert("Error updating product: " + error.message);
-                alert("Product updated successfully!");
-            } else {
-                // Insert new
-                const { error } = await sb.from('products').insert(productData);
-                if (error) return alert("Error adding product: " + error.message);
-                alert("Product added successfully!");
-            }
-
-            closeProductModal();
-            loadInventory();
-        }
-
-        async function deleteProduct(id) {
-            if (!confirm("Are you sure you want to delete this product?")) return;
-            
-            const { error } = await sb.from('products').delete().eq('id', id);
-            if (error) return alert("Failed to delete: " + error.message);
-            
-            loadInventory();
-        }
-
-        // --- Orders Logic ---
-        async function loadOrders() {
-            const { data } = await sb.from('orders').select('*').order('created_at', { ascending: false });
-            const list = document.getElementById('admin-order-list');
-            
-            if (!data || data.length === 0) {
-                list.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px; color:#666;">No orders found.</td></tr>`;
+        async function addToCart(id, name, price, btn) {
+            const { data: { user } } = await sb.auth.getUser();
+            if (!user) {
+                alert("Please log in or sign up to add items to your cart.");
+                showAuthModal('login');
                 return;
             }
 
-            list.innerHTML = data.map(o => `
-                <tr>
-                    <td style="font-family: monospace;">${o.id.substring(0, 8)}...</td>
-                    <td>${new Date(o.created_at).toLocaleDateString()}</td>
-                    <td>$${parseFloat(o.total_amount).toFixed(2)}</td>
-                    <td>
-                        <select class="status-select" onchange="updateOrderStatus('${o.id}', this.value)">
-                            <option ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                            <option ${o.status === 'Packed' ? 'selected' : ''}>Packed</option>
-                            <option ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
-                            <option ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
-                            <option ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-                        </select>
-                    </td>
-                </tr>
-            `).join('');
+            cart.push({ id, name, price });
+            document.getElementById('cart-count').innerText = cart.length;
+            
+            const originalText = btn.innerText;
+            btn.innerText = "Added!";
+            btn.style.background = "#4CAF50";
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.background = "";
+            }, 1000);
         }
 
-        async function updateOrderStatus(id, status) {
-            const { error } = await sb.from('orders').update({ status: status }).eq('id', id);
-            if (error) alert("Failed to update status.");
+        function checkout() {
+            if (cart.length === 0) {
+                alert("Your cart is empty.");
+                return;
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            window.location.href = 'cart.html';
         }
 
         // --- Init ---
-        sb.auth.getSession().then(({ data }) => {
-            if (data.session) {
-                sb.from('admins').select('*').eq('user_id', data.session.user.id).single().then(({ data: adminData }) => {
-                    if (adminData) enterDashboard();
-                });
+        sb.auth.getSession().then(async ({ data }) => {
+            if (data.session) await updateUI(data.session.user);
+            else updateUI(null);
+            loadProducts();
+        });
+
+        sb.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN') {
+                await updateUI(session.user);
+            } else if (event === 'SIGNED_OUT') {
+                updateUI(null);
             }
         });
     </script>
