@@ -87,7 +87,8 @@
                 
                 <div id="user-section" class="hidden" style="display: flex; align-items: center; gap: 16px;">
                     <div class="nav-user-link" onclick="window.location.href='profile.html'">
-                        <span id="user-email" style="color:#111; font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                        <!-- Changed ID to user-name -->
+                        <span id="user-name" style="color:#111; font-weight: 500; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                     </div>
                     <button onclick="logout()" style="color: #666;">Logout</button>
@@ -173,7 +174,6 @@
             document.getElementById('modal-title').innerText = isSignup ? 'Sign Up' : 'Login';
             document.getElementById('submit-auth-btn').innerText = isSignup ? 'Sign Up' : 'Log In';
             
-            // Show/hide extra fields
             if (isSignup) {
                 document.getElementById('signup-fields').classList.remove('hidden');
             } else {
@@ -224,7 +224,7 @@
                     if (error) throw error;
                     if (data.user) {
                         hideAuthModal();
-                        updateUI(data.user);
+                        await updateUI(data.user);
                     }
                 } else {
                     const fullName = document.getElementById('signup-name').value;
@@ -234,7 +234,6 @@
                     if (error) throw error;
                     
                     if (data.user) {
-                        // Create customer record with new fields
                         await sb.from('customers').insert({ 
                             user_id: data.user.id, 
                             email: email,
@@ -256,13 +255,35 @@
             updateUI(null);
         }
 
-        function updateUI(user) {
+        // Made async to fetch user's name from the database
+        async function updateUI(user) {
+            const nameElement = document.getElementById('user-name');
+            
             if (user) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('user-section').classList.remove('hidden');
                 document.getElementById('user-section').style.display = 'flex';
-                document.getElementById('user-email').innerText = user.email;
+                
+                // Default fallback while fetching
+                nameElement.innerText = 'Profile'; 
+                
+                try {
+                    // Fetch the user's profile from the customers table
+                    const { data: custData } = await sb.from('customers').select('full_name').eq('user_id', user.id).maybeSingle();
+                    
+                    if (custData && custData.full_name) {
+                        // Get the first name by splitting the full name
+                        const firstName = custData.full_name.split(' ')[0];
+                        nameElement.innerText = firstName;
+                    } else {
+                        // Fallback to email prefix if name is missing
+                        nameElement.innerText = user.email.split('@')[0];
+                    }
+                } catch (e) {
+                    console.error("Error fetching user name:", e);
+                    nameElement.innerText = user.email.split('@')[0];
+                }
             } else {
                 document.getElementById('auth-section').classList.remove('hidden');
                 document.getElementById('auth-section').style.display = 'flex';
@@ -335,15 +356,15 @@
         }
 
         // --- Init ---
-        sb.auth.getSession().then(({ data }) => {
-            if (data.session) updateUI(data.session.user);
+        sb.auth.getSession().then(async ({ data }) => {
+            if (data.session) await updateUI(data.session.user);
             else updateUI(null);
             loadProducts();
         });
 
-        sb.auth.onAuthStateChange((event, session) => {
+        sb.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN') {
-                updateUI(session.user);
+                await updateUI(session.user);
             } else if (event === 'SIGNED_OUT') {
                 updateUI(null);
             }
