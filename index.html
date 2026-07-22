@@ -305,10 +305,12 @@
 
         function renderProducts(products) {
             const grid = document.getElementById('product-grid');
+
             if (products.length === 0) {
                 grid.innerHTML = `<div style="text-align: center; padding: 40px; color: #666; grid-column: 1/-1;">No products match your search.</div>`;
                 return;
             }
+
             grid.innerHTML = products.map((p, index) => `
                 <div class="product-card" style="animation-delay: ${index * 0.05}s;">
                     <div class="product-img-box">
@@ -319,9 +321,9 @@
                             <div class="product-name">${p.name}</div>
                             <div class="product-cat">${p.categories?.name || 'Uncategorized'}</div>
                         </div>
-                        <div class="product-price">$${p.price}</div>
+                        <div class="product-price">₹${p.price}</div>
                     </div>
-                    <button class="add-cart-btn" onclick="addToCart('${p.id}', \`${p.name.replace(/`/g, '')}\`, ${p.price}, this)">Add to Cart</button>
+                    <button class="add-cart-btn" onclick="addToCart('${p.id}', '${p.name.replace(/`/g, '')}', ${p.price}, this)">Add to Cart</button>
                 </div>
             `).join('');
         }

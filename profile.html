@@ -175,13 +175,13 @@
 
             list.innerHTML = data.map(addr => `
                 <div class="address-card">
-                    <div class="address-label">${addr.label || 'Address'}</div>
+                    <div class="address-label">₹{addr.label || 'Address'}</div>
                     <div class="address-text">
-                        ${addr.address_line1}<br>
-                        ${addr.address_line2 ? addr.address_line2 + '<br>' : ''}
-                        ${addr.city}, ${addr.state} ${addr.postal_code}
+                        ₹{addr.address_line1}<br>
+                        ₹{addr.address_line2 ? addr.address_line2 + '<br>' : ''}
+                        ₹{addr.city}, ₹{addr.state} ₹{addr.postal_code}
                     </div>
-                    <button class="delete-btn" onclick="deleteAddress('${addr.id}')">Delete</button>
+                    <button class="delete-btn" onclick="deleteAddress('₹{addr.id}')">Delete</button>
                 </div>
             `).join('');
         }

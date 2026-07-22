@@ -64,7 +64,7 @@
         </div>
         
         <div id="cart-summary" class="cart-summary hidden">
-            <div class="total-text">Total: $<span id="total-price">0.00</span></div>
+            <div class="total-text">Total: ₹<span id="total-price">0.00</span></div>
             <button class="checkout-btn" onclick="placeOrder()">Place Order</button>
         </div>
     </div>
@@ -158,7 +158,7 @@
                     <div class="cart-item">
                         <div>
                             <div class="item-name">${item.name}</div>
-                            <div class="item-price">$${parseFloat(item.price).toFixed(2)}</div>
+                            <div class="item-price">₹${parseFloat(item.price).toFixed(2)}</div>
                         </div>
                         <button onclick="removeItem(${index})" style="color: #D32F2F; font-size: 14px;">Remove</button>
                     </div>
