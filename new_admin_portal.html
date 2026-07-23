@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storify - Admin Management Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #6750a4;
+      --primary-container: #e8def8;
+      --on-primary-container: #1d192b;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #1d1b20;
+      --subtext: #49454f;
+      --success: #2e7d32;
+      --danger: #c62828;
+      --warning: #ed6c02;
+    }
+
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; padding: 20px; background: var(--bg); color: var(--text); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e0e0e0; }
+    h1 { margin: 0; color: var(--primary); font-size: 24px; }
+
+    .nav-tabs { display: flex; gap: 12px; margin-bottom: 20px; }
+    .tab-btn { padding: 10px 20px; border-radius: 8px; border: none; background: #e0e0e0; font-weight: bold; cursor: pointer; }
+    .tab-btn.active { background: var(--primary); color: white; }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .orders-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+    .order-card { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid #e0e0e0; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .order-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 8px; }
+    
+    .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+    .status-pending { background: #fff3e0; color: var(--warning); }
+    .status-confirmed { background: #e3f2fd; color: #0288d1; }
+    .status-fulfilled { background: #e8f5e9; color: var(--success); }
+    .status-cancelled { background: #ffebee; color: var(--danger); }
+
+    .order-details { margin: 12px 0; font-size: 14px; color: var(--subtext); line-height: 1.5; }
+    .payment-tag { display: inline-block; padding: 2px 8px; background: var(--primary-container); color: var(--on-primary-container); border-radius: 6px; font-weight: bold; font-size: 11px; margin-top: 4px; }
+
+    .action-btns { display: flex; gap: 8px; margin-top: 12px; }
+    .btn { flex: 1; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; font-size: 13px; }
+    .btn-confirm { background: #0288d1; color: white; }
+    .btn-fulfill { background: var(--success); color: white; }
+    .btn-cancel { background: var(--danger); color: white; }
+
+    .config-box { background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px; }
+    .config-box input { padding: 8px; width: 300px; margin-right: 8px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Storify Admin Portal</h1>
+    <div id="connectionStatus" style="font-weight: bold; color: var(--success);">Connected to Supabase</div>
+  </header>
+
+  <div class="config-box">
+    <h3>Supabase Credentials</h3>
+    <input type="text" id="supabaseUrl" placeholder="Supabase Project URL" />
+    <input type="text" id="supabaseKey" placeholder="Supabase Anon Key" />
+    <button class="tab-btn active" onclick="initSupabase()">Connect</button>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('orders')">Orders Management</button>
+    <button class="tab-btn" onclick="switchTab('products')">Products</button>
+  </div>
+
+  <!-- ORDERS SECTION -->
+  <div id="ordersSection" class="section active">
+    <h2>Customer Orders</h2>
+    <div id="ordersList" class="orders-grid">
+      <p>Loading orders...</p>
+    </div>
+  </div>
+
+  <!-- PRODUCTS SECTION -->
+  <div id="productsSection" class="section">
+    <h2>Product Catalog</h2>
+    <p>Product management interface ready.</p>
+  </div>
+
+  <script>
+    let supabaseClient = null;
+
+    function initSupabase() {
+      const url = document.getElementById('supabaseUrl').value || 'YOUR_SUPABASE_URL';
+      const key = document.getElementById('supabaseKey').value || 'YOUR_SUPABASE_ANON_KEY';
+      supabaseClient = supabase.createClient(url, key);
+      fetchOrders();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(sec => btn.classList.remove('active'));
+      
+      if (tab === 'orders') {
+        document.getElementById('ordersSection').classList.add('active');
+        fetchOrders();
+      } else {
+        document.getElementById('productsSection').classList.add('active');
+      }
+    }
+
+    async function fetchOrders() {
+      if (!supabaseClient) return;
+      const { data: orders, error } = await supabaseClient
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        document.getElementById('ordersList').innerHTML = `<p style="color:red">Error loading orders: ${error.message}</p>`;
+        return;
+      }
+
+      if (!orders || orders.length === 0) {
+        document.getElementById('ordersList').innerHTML = `<p>No orders found.</p>`;
+        return;
+      }
+
+      document.getElementById('ordersList').innerHTML = orders.map(order => `
+        <div class="order-card">
+          <div class="order-header">
+            <span>Order #${(order.id || '').substring(0, 8)}</span>
+            <span class="status-badge status-${(order.status || 'pending').toLowerCase()}">${order.status || 'pending'}</span>
+          </div>
+          <div class="order-details">
+            <div><strong>Amount:</strong> ₹${order.total_amount}</div>
+            <div><strong>Items:</strong> ${order.items_summary || 'N/A'}</div>
+            <div><strong>User ID:</strong> ${(order.user_id || '').substring(0, 12)}...</div>
+            <div class="payment-tag">Payment: ${order.payment_method || 'COD'} (${order.payment_status || 'Pending'})</div>
+            ${order.transaction_id ? `<div style="font-size:11px; margin-top:2px; color:#666">Tx ID: ${order.transaction_id}</div>` : ''}
+          </div>
+          <div class="action-btns">
+            ${order.status === 'pending' ? `<button class="btn btn-confirm" onclick="updateOrderStatus('${order.id}', 'confirmed')">Confirm</button>` : ''}
+            ${order.status !== 'fulfilled' && order.status !== 'cancelled' ? `<button class="btn btn-fulfill" onclick="updateOrderStatus('${order.id}', 'fulfilled')">Fulfill</button>` : ''}
+            ${order.status !== 'cancelled' && order.status !== 'fulfilled' ? `<button class="btn btn-cancel" onclick="updateOrderStatus('${order.id}', 'cancelled')">Cancel</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+      if (!supabaseClient) return;
+      const { error } = await supabaseClient
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+
+      if (error) {
+        alert('Failed to update status: ' + error.message);
+      } else {
+        fetchOrders();
+      }
+    }
+
+    // Auto-load on startup
+    window.onload = initSupabase;
+  </script>
+</body>
+</html>
