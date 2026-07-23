@@ -50,30 +50,34 @@
         .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
         .hidden { display: none !important; }
+        
+        /* Toast Notification System */
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { background: #111; color: white; padding: 16px 24px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; animation: slideInDown 0.3s ease forwards; }
+        .toast.success { border-left: 4px solid #4CAF50; }
+        .toast.error { border-left: 4px solid #f44336; }
+        .toast.info { border-left: 4px solid #2196F3; }
+        @keyframes slideInDown { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideOutUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100px); opacity: 0; } }
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <nav><div class="nav-inner"><a href="index.html" class="nav-logo">Minimalist</a><button onclick="goBack()" style="font-size: 14px; color: #666;">Continue Shopping</button></div></nav>
 
     <div class="cart-container">
         <h1>Your Cart</h1>
         <div id="cart-items"></div>
-        
         <div id="checkout-section" class="hidden">
             <h2>Select Delivery Address</h2>
             <div id="address-list"></div>
             <button onclick="showAddressModal()" style="color: #111; font-weight: 500; margin-top: 8px; width: 100%; text-align: center; padding: 12px; border: 1px dashed #ccc; border-radius: 8px;">+ Add New Address</button>
-            
             <h2>Payment Method</h2>
             <div class="payment-options">
-                <div class="payment-card selected" onclick="selectPayment('COD')" id="pay-cod">
-                    <div class="payment-icon">💵</div>
-                    <div style="font-weight: 500; font-size: 14px;">Cash on Delivery</div>
-                </div>
-                <div class="payment-card" onclick="selectPayment('UPI')" id="pay-upi">
-                    <div class="payment-icon">📱</div>
-                    <div style="font-weight: 500; font-size: 14px;">UPI Payment</div>
-                </div>
+                <div class="payment-card selected" onclick="selectPayment('COD')" id="pay-cod"><div class="payment-icon">💵</div><div style="font-weight: 500; font-size: 14px;">Cash on Delivery</div></div>
+                <div class="payment-card" onclick="selectPayment('UPI')" id="pay-upi"><div class="payment-icon">📱</div><div style="font-weight: 500; font-size: 14px;">UPI Payment</div></div>
             </div>
         </div>
     </div>
@@ -101,17 +105,23 @@
         </div>
     </div>
 
-    <!-- UPI Payment Modal -->
     <div id="upi-modal" class="modal-overlay hidden">
         <div class="modal-box" style="text-align: center;">
             <h3 style="margin-bottom: 16px; font-size: 20px;">Complete UPI Payment</h3>
             <p style="color: #666; font-size: 14px; margin-bottom: 24px;">Click the button below to open your UPI app and pay $<span id="upi-amount">0.00</span> to <strong>antal@fam</strong>.</p>
-            
-            <!-- Deep Link Trigger -->
             <a id="upi-deep-link" href="#" style="display: block; width: 100%; padding: 14px; background: #111; color: white; border-radius: 8px; font-weight: 500; margin-bottom: 16px; text-decoration: none;">Open UPI App</a>
-            
             <button onclick="finalizeOrder('UPI')" style="width: 100%; padding: 14px; background: #4CAF50; color: white; border-radius: 8px; font-weight: 500; margin-bottom: 8px;">I have Paid - Finalize Order</button>
             <button onclick="hideUpiModal()" style="width: 100%; padding: 12px; color: #666;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="modal-overlay hidden" style="align-items: center;">
+        <div class="modal-box" style="border-radius: 16px; text-align: center;">
+            <div style="width: 60px; height: 60px; background: #E8F5E9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 28px; color: #4CAF50;">✓</div>
+            <h3 style="margin-bottom: 12px; font-size: 20px;">Order Placed!</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 24px;">Your order has been placed successfully.</p>
+            <button onclick="window.location.href='index.html'" style="width: 100%; padding: 14px; background: #111; color: white; border-radius: 8px; font-weight: 500; font-size: 16px;">Continue Shopping</button>
         </div>
     </div>
 
@@ -125,7 +135,20 @@
         let currentCustomer = null; 
         let selectedAddressId = null; 
         let addresses = [];
-        let selectedPaymentMethod = 'COD'; // Default
+        let selectedPaymentMethod = 'COD';
+        
+        // Toast Notification Function
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOutUp 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
         
         async function initCart() {
             const { data: { session } } = await sb.auth.getSession(); 
@@ -184,79 +207,62 @@
         
         async function saveAddress() {
             const newAddress = { user_id: currentUser.id, customer_id: currentCustomer ? currentCustomer.id : null, label: document.getElementById('address-label').value, address_line1: document.getElementById('address-line1').value, address_line2: document.getElementById('address-line2').value, city: document.getElementById('address-city').value, state: document.getElementById('address-state').value, postal_code: document.getElementById('address-postal').value };
-            if (!newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) return alert("Please fill required fields.");
+            if (!newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) return showToast("Please fill required fields.", 'error');
             const { data, error } = await sb.from('addresses').insert([newAddress]).select(); 
-            if (error) return alert("Error: " + error.message);
+            if (error) return showToast("Error: " + error.message, 'error');
             if (data && data.length > 0) selectedAddressId = data[0].id; 
             hideAddressModal(); 
             await loadAddresses();
+            showToast("Address saved!", 'success');
         }
         
         function removeItem(index) { cart.splice(index, 1); localStorage.setItem('cart', JSON.stringify(cart)); renderCart(); }
         function goBack() { window.location.href = 'index.html'; }
         
         function handlePlaceOrder() {
-            if (!selectedAddressId) { alert("Please select a delivery address."); return; }
+            if (!selectedAddressId) { showToast("Please select a delivery address.", 'error'); return; }
             if (selectedPaymentMethod === 'UPI') {
-                // Trigger UPI Deep Link
                 const amount = document.getElementById('total-price').innerText;
                 const upiId = 'antal@fam';
                 const name = 'Minimalist Store';
                 const note = 'Order Payment';
-                // Standard UPI deep link format
                 const upiUrl = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amount}&cu=USD&tn=${encodeURIComponent(note)}`;
-                
                 document.getElementById('upi-deep-link').href = upiUrl;
                 document.getElementById('upi-modal').classList.remove('hidden');
-                
-                // Attempt to auto-open the UPI app
                 window.location.href = upiUrl;
             } else {
                 finalizeOrder('COD');
             }
         }
         
-        function hideUpiModal() {
-            document.getElementById('upi-modal').classList.add('hidden');
-        }
+        function hideUpiModal() { document.getElementById('upi-modal').classList.add('hidden'); }
         
         async function finalizeOrder(method) {
             const totalAmount = parseFloat(document.getElementById('total-price').innerText);
             const itemsSummary = cart.map(item => `${item.name} (x1)`).join(', ');
-            
             const orderData = {
                 user_id: currentUser.id,
                 customer_id: currentCustomer ? currentCustomer.id : null,
                 total_amount: totalAmount,
                 status: 'pending',
                 payment_method: method,
-                payment_status: method === 'UPI' ? 'Completed' : 'Pending', // Assuming UPI is paid manually by user
+                payment_status: method === 'UPI' ? 'Completed' : 'Pending',
                 shipping_address_id: selectedAddressId,
                 items_summary: itemsSummary
             };
             
             const { data: order, error } = await sb.from('orders').insert([orderData]).select();
+            if (error) return showToast("Error placing order: " + error.message, 'error');
             
-            if (error) {
-                console.error(error);
-                return alert("Error placing order: " + error.message);
-            }
-            
-            // Also insert order_items if you want granular tracking
             if (order && order.length > 0) {
-                const orderItems = cart.map(item => ({
-                    order_id: order[0].id,
-                    product_id: item.id,
-                    quantity: 1,
-                    unit_price: item.price,
-                    total_price: item.price
-                }));
+                const orderItems = cart.map(item => ({ order_id: order[0].id, product_id: item.id, quantity: 1, unit_price: item.price, total_price: item.price }));
                 await sb.from('order_items').insert(orderItems);
             }
             
-            alert("Order placed successfully!");
+            // Clear cart and show success modal
             localStorage.removeItem('cart');
-            window.location.href = 'index.html';
+            hideUpiModal();
+            document.getElementById('success-modal').classList.remove('hidden');
         }
         
         initCart();

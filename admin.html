@@ -37,7 +37,7 @@
         .clickable-row { cursor: pointer; }
         .clickable-row:hover { background: #f9f9f9; }
         
-        .status-badge { padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 500; text-transform: capitalize; }
+        .status-badge { padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 500; text-transform: capitalize; display: inline-block; }
         .status-pending { background: #FFF3E0; color: #E65100; }
         .status-confirmed { background: #E3F2FD; color: #1565C0; }
         .status-fulfilled { background: #E8F5E9; color: #2E7D32; }
@@ -68,27 +68,36 @@
 
         .hidden { display: none !important; }
         
+        /* Toast Notification System */
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast { background: #111; color: white; padding: 16px 24px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px; animation: slideInDown 0.3s ease forwards; }
+        .toast.success { border-left: 4px solid #4CAF50; }
+        .toast.error { border-left: 4px solid #f44336; }
+        .toast.info { border-left: 4px solid #2196F3; }
+        @keyframes slideInDown { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideOutUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100px); opacity: 0; } }
+        
         @media (max-width: 768px) {
             .admin-layout { flex-direction: column; padding-bottom: 60px; }
             .sidebar { width: 100%; height: auto; padding: 12px 16px; flex-direction: row; align-items: center; position: fixed; bottom: 0; z-index: 50; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
             .sidebar-logo { display: none; }
             .sidebar nav { flex-direction: row; padding: 0; gap: 8px; width: 100%; justify-content: space-around; }
             .sidebar nav button { padding: 8px 12px; font-size: 13px; }
-            
             .admin-main { padding: 24px 16px; }
             .admin-title { font-size: 20px; }
-            
             .admin-table thead { display: none; }
             .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
             .admin-table tr { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 12px; background: white; }
             .admin-table td { display: flex; justify-content: space-between; align-items: center; border: none; padding: 12px 16px; text-align: right; }
             .admin-table td::before { content: attr(data-label); font-weight: 600; text-align: left; padding-right: 10px; color: var(--text); }
-            
             .detail-grid { grid-template-columns: 1fr; gap: 16px; }
         }
     </style>
 </head>
 <body>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <div id="login-view" class="login-container">
         <div class="login-box">
@@ -144,7 +153,8 @@
             <div class="form-group">
                 <label class="form-label">Category</label>
                 <select id="product-category" class="form-input" onchange="handleCategoryChange()"><option value="">Loading...</option></select>
-                <input type="text" id="new-category-name" class="form-input hidden" style="margin-top: 8px;" placeholder="Enter new category">
+                <!-- Fixed Category Input -->
+                <input type="text" id="new-category-name" class="form-input hidden" style="margin-top: 8px;" placeholder="Enter new category name">
             </div>
             <div class="form-group"><label class="form-label">Description (Optional)</label><textarea id="product-desc" class="form-input" rows="3" placeholder="Short description..."></textarea></div>
             <div class="form-actions">
@@ -170,12 +180,25 @@
         const SUPABASE_KEY = 'sb_publishable_1T6au-U7x62mijV5eP6IGg_6SWEaifK';
         const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // Toast Notification Function
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOutUp 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         async function loginAdmin() {
             const email = document.getElementById('admin-email').value; const pass = document.getElementById('admin-pass').value;
             const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-            if (error) return alert("Login failed: " + error.message);
+            if (error) return showToast("Login failed: " + error.message, 'error');
             const { data: adminData } = await sb.from('admins').select('*').eq('user_id', data.user.id).single();
-            if (adminData) enterDashboard(); else { alert("You are not an admin."); await sb.auth.signOut(); }
+            if (adminData) enterDashboard(); else { showToast("You are not an admin.", 'error'); await sb.auth.signOut(); }
         }
         async function logout() { await sb.auth.signOut(); document.getElementById('dashboard-view').classList.add('hidden'); document.getElementById('login-view').classList.remove('hidden'); }
         async function enterDashboard() {
@@ -230,33 +253,32 @@
         function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
         async function saveProduct() {
             const id = document.getElementById('product-id').value; const name = document.getElementById('product-name').value; const price = parseFloat(document.getElementById('product-price').value); const stock = parseInt(document.getElementById('product-stock').value); const image = document.getElementById('product-image').value; const desc = document.getElementById('product-desc').value;
-            if (!name || isNaN(price) || isNaN(stock)) return alert("Please fill in Name, Price, and Stock.");
+            if (!name || isNaN(price) || isNaN(stock)) return showToast("Please fill in Name, Price, and Stock.", 'error');
             let categoryId = document.getElementById('product-category').value;
             if (categoryId === "") {
                 const newCatName = document.getElementById('new-category-name').value.trim();
                 if (newCatName) {
                     const slug = newCatName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                     const { data: newCat, error: catError } = await sb.from('categories').insert({ name: newCatName, slug: slug }).select('id').single();
-                    if (catError) { const { data: existingCat } = await sb.from('categories').select('id').eq('slug', slug).maybeSingle(); if (existingCat) categoryId = existingCat.id; else return alert("Error creating category: " + catError.message); }
+                    if (catError) { const { data: existingCat } = await sb.from('categories').select('id').eq('slug', slug).maybeSingle(); if (existingCat) categoryId = existingCat.id; else return showToast("Error creating category: " + catError.message, 'error'); }
                     else categoryId = newCat.id;
                 } else categoryId = null;
             }
             const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             const slug = id ? baseSlug : `${baseSlug}-${Date.now().toString(36)}`;
             const productData = { name, slug, price, inventory_count: stock, image_url: image, category_id: categoryId || null, description: desc, is_active: true };
-            if (id) { const { error } = await sb.from('products').update(productData).eq('id', id); if (error) return alert("Error: " + error.message); alert("Updated!"); }
-            else { const { error } = await sb.from('products').insert(productData); if (error) return alert("Error: " + error.message); alert("Added!"); }
+            if (id) { const { error } = await sb.from('products').update(productData).eq('id', id); if (error) return showToast("Error: " + error.message, 'error'); showToast("Product updated successfully!", 'success'); }
+            else { const { error } = await sb.from('products').insert(productData); if (error) return showToast("Error: " + error.message, 'error'); showToast("Product added successfully!", 'success'); }
             closeProductModal(); loadInventory();
         }
-        async function deleteProduct(id) { if (!confirm("Delete this product?")) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) return alert("Failed."); loadInventory(); }
+        async function deleteProduct(id) { if (!confirm("Delete this product?")) return; const { error } = await sb.from('products').delete().eq('id', id); if (error) return showToast("Failed.", 'error'); showToast("Product deleted.", 'info'); loadInventory(); }
 
         // --- Orders Logic ---
         async function loadOrders() {
             const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false });
             const list = document.getElementById('admin-order-list');
-            if (error) { console.error(error); list.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#666;">Error loading orders. Check console.</td></tr>`; return; }
+            if (error) { console.error(error); list.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#666;">Error loading orders.</td></tr>`; return; }
             if (!data || data.length === 0) { list.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px; color:#666;">No orders found.</td></tr>`; return; }
-            
             list.innerHTML = data.map(o => `
                 <tr class="clickable-row" onclick="viewOrderDetails('${o.id}')">
                     <td data-label="ID" style="font-family: monospace;">${o.id.substring(0, 8)}...</td>
@@ -270,45 +292,22 @@
 
         async function viewOrderDetails(orderId) {
             const { data: order, error } = await sb.from('orders').select('*').eq('id', orderId).single();
-            if (error) return alert("Error fetching order details.");
-            
+            if (error) return showToast("Error fetching order details.", 'error');
             let customerHTML = '<p>Guest Checkout</p>';
             if (order.customer_id) {
                 const { data: cust } = await sb.from('customers').select('*').eq('id', order.customer_id).single();
-                if (cust) {
-                    customerHTML = `
-                        <div class="detail-item"><strong>Name:</strong> ${cust.full_name || 'N/A'}</div>
-                        <div class="detail-item"><strong>Email:</strong> ${cust.email}</div>
-                        <div class="detail-item"><strong>Phone:</strong> ${cust.mobile_number || 'N/A'}</div>
-                    `;
-                }
+                if (cust) { customerHTML = `<div class="detail-item"><strong>Name:</strong> ${cust.full_name || 'N/A'}</div><div class="detail-item"><strong>Email:</strong> ${cust.email}</div><div class="detail-item"><strong>Phone:</strong> ${cust.mobile_number || 'N/A'}</div>`; }
             }
-
             let addressHTML = '<p>No address saved</p>';
             if (order.shipping_address_id) {
                 const { data: addr } = await sb.from('addresses').select('*').eq('id', order.shipping_address_id).single();
-                if (addr) {
-                    addressHTML = `
-                        <div class="detail-item">${addr.address_line1}</div>
-                        ${addr.address_line2 ? `<div class="detail-item">${addr.address_line2}</div>` : ''}
-                        <div class="detail-item">${addr.city}, ${addr.state} ${addr.postal_code}</div>
-                    `;
-                }
+                if (addr) { addressHTML = `<div class="detail-item">${addr.address_line1}</div>${addr.address_line2 ? `<div class="detail-item">${addr.address_line2}</div>` : ''}<div class="detail-item">${addr.city}, ${addr.state} ${addr.postal_code}</div>`; }
             }
-
-            const content = document.getElementById('order-detail-content');
-            content.innerHTML = `
+            document.getElementById('order-detail-content').innerHTML = `
                 <div class="detail-grid">
-                    <div class="detail-section">
-                        <h4>Customer Info</h4>
-                        ${customerHTML}
-                    </div>
-                    <div class="detail-section">
-                        <h4>Shipping Address</h4>
-                        ${addressHTML}
-                    </div>
+                    <div class="detail-section"><h4>Customer Info</h4>${customerHTML}</div>
+                    <div class="detail-section"><h4>Shipping Address</h4>${addressHTML}</div>
                 </div>
-                
                 <div class="detail-grid">
                     <div class="detail-section">
                         <h4>Order Info</h4>
@@ -324,7 +323,6 @@
                         <div class="detail-item"><strong>Transaction ID:</strong> ${order.transaction_id || 'N/A'}</div>
                     </div>
                 </div>
-
                 <div class="detail-section">
                     <h4>Order Status</h4>
                     <div class="action-buttons">
@@ -332,22 +330,17 @@
                         <button class="action-btn btn-fulfill" onclick="updateOrderStatus('${order.id}', 'fulfilled')">Mark Fulfilled</button>
                         <button class="action-btn btn-cancel" onclick="updateOrderStatus('${order.id}', 'cancelled')">Cancel Order</button>
                     </div>
-                </div>
-            `;
-            
+                </div>`;
             document.getElementById('order-modal').classList.remove('hidden');
         }
 
-        function closeOrderModal() {
-            document.getElementById('order-modal').classList.add('hidden');
-        }
+        function closeOrderModal() { document.getElementById('order-modal').classList.add('hidden'); }
 
         async function updateOrderStatus(orderId, status) {
             const { error } = await sb.from('orders').update({ status: status }).eq('id', orderId);
-            if (error) return alert("Failed to update status.");
-            alert(`Order marked as ${status}!`);
-            closeOrderModal();
-            loadOrders(); // Refresh list
+            if (error) return showToast("Failed to update status.", 'error');
+            showToast(`Order marked as ${status}!`, 'success');
+            closeOrderModal(); loadOrders();
         }
 
         sb.auth.getSession().then(({ data }) => { if (data.session) { sb.from('admins').select('*').eq('user_id', data.session.user.id).single().then(({ data: adminData }) => { if (adminData) enterDashboard(); }); } });
